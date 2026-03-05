@@ -9,12 +9,8 @@ create table public.app_roles (
 alter table public.app_roles enable row level security;
 
 create policy "admins_manage_roles" on public.app_roles
-  for all using (
-    exists (
-      select 1 from public.app_roles ar
-      where ar.user_id = auth.uid() and ar.role = 'admin'
-    )
-  );
+  for all using (public.has_role('admin'))
+  with check (public.has_role('admin'));
 
 create or replace function public.has_role(required_role text)
 returns boolean
@@ -24,8 +20,8 @@ security definer
 set search_path = 'public', 'auth'
 as $$
   select exists (
-    select 1 from app_roles
-    where user_id = uid() and role = required_role
+    select 1 from public.app_roles
+    where user_id = auth.uid() and role = required_role
   );
 $$;
 
@@ -37,8 +33,8 @@ security definer
 set search_path = 'public', 'auth'
 as $$
   select exists (
-    select 1 from app_roles
-    where user_id = uid() and role in ('admin', 'editor')
+    select 1 from public.app_roles
+    where user_id = auth.uid() and role in ('admin', 'editor')
   );
 $$;
 
@@ -146,8 +142,8 @@ security definer
 set search_path = 'public', 'auth'
 as $$
   select exists (
-    select 1 from entitlements
-    where user_id = uid()
+    select 1 from public.entitlements
+    where user_id = auth.uid()
       and plan_code = 'premium'
       and active = true
       and (ends_at is null or ends_at > now())
