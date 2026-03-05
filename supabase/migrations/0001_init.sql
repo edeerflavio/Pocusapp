@@ -295,19 +295,23 @@ create index idx_media_assets_owner on public.media_assets(owner_type, owner_id)
 create policy "select_media_via_parent" on public.media_assets
   for select using (
     (owner_type = 'drugs' and exists (
-      select 1 from public.drugs where id = owner_id
+      select 1 from public.drugs d
+      where d.id = media_assets.owner_id
     ))
     or
     (owner_type = 'diseases' and exists (
-      select 1 from public.diseases where id = owner_id
+      select 1 from public.diseases di
+      where di.id = media_assets.owner_id
     ))
     or
     (owner_type = 'protocols' and exists (
-      select 1 from public.protocols where id = owner_id
+      select 1 from public.protocols p
+      where p.id = media_assets.owner_id
     ))
     or
     (owner_type = 'pocus_items' and exists (
-      select 1 from public.pocus_items where id = owner_id
+      select 1 from public.pocus_items pi
+      where pi.id = media_assets.owner_id
     ))
   );
 
