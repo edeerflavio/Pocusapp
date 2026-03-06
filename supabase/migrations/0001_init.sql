@@ -8,10 +8,7 @@ create table public.app_roles (
 
 alter table public.app_roles enable row level security;
 
-create policy "admins_manage_roles" on public.app_roles
-  for all using (public.has_role('admin'))
-  with check (public.has_role('admin'));
-
+-- Helper function used in policies
 create or replace function public.has_role(required_role text)
 returns boolean
 language sql
@@ -25,6 +22,12 @@ as $$
   );
 $$;
 
+-- Only admins can read/manage roles
+create policy "admins_manage_roles" on public.app_roles
+  for all using (public.has_role('admin'))
+  with check (public.has_role('admin'));
+
+-- Convenience: is admin or editor
 create or replace function public.is_admin_or_editor()
 returns boolean
 language sql
