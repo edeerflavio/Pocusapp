@@ -20,8 +20,22 @@ serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const authHeader = req.headers.get("Authorization") ?? "";
+  const hasAuthHeader = authHeader !== "";
+  const hasXJwtClaimSub = req.headers.get("x-jwt-claim-sub") !== null;
+  const hasXSupabaseAuthUser = req.headers.get("x-supabase-auth-user") !== null;
+
   const tokenMatch = authHeader.match(/^bearer\s+(.+)/i);
-  if (!tokenMatch) return json({ error: "Unauthorized" }, 401);
+  if (!tokenMatch) {
+    return json({
+      error: "Unauthorized",
+      reason: "missing_auth_header",
+      debug: {
+        has_auth_header: hasAuthHeader,
+        has_x_jwt_claim_sub: hasXJwtClaimSub,
+        has_x_supabase_auth_user: hasXSupabaseAuthUser,
+      },
+    }, 401);
+  }
   const token = tokenMatch[1].trim();
 
   console.log(`[auth] token length=${token.length}, preview=${token.slice(0, 5)}...${token.slice(-5)}`);
@@ -33,6 +47,7 @@ serve(async (req) => {
     null;
   let userEmail: string | null = req.headers.get("x-jwt-claim-email") ?? null;
 
+  let jwtDecodeFailed = false;
   if (!userId || !userEmail) {
     // Fallback: decode JWT payload (no signature verification — runtime already accepted it).
     try {
@@ -43,12 +58,26 @@ serve(async (req) => {
         userEmail = userEmail ?? payload.email ?? null;
       }
     } catch (e) {
+      jwtDecodeFailed = true;
       console.error("[auth] jwt decode failed", e instanceof Error ? e.message : String(e));
     }
   }
 
   console.log(`[auth] userId=${userId}, email=${userEmail}`);
-  if (!userId) return json({ code: 401, message: "missing_user" }, 401);
+  if (!userId) {
+    return json({
+      code: 401,
+      message: "Invalid JWT",
+      reason: jwtDecodeFailed ? "jwt_decode_failed" : "missing_user_claim",
+      debug: {
+        has_auth_header: hasAuthHeader,
+        has_x_jwt_claim_sub: hasXJwtClaimSub,
+        has_x_supabase_auth_user: hasXSupabaseAuthUser,
+        token_parts: token.split(".").length,
+        token_len: token.length,
+      },
+    }, 401);
+  }
 
   const adminClient = createClient(
     Deno.env.get("SB_URL")!,
