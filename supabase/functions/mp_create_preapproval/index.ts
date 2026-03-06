@@ -23,13 +23,18 @@ serve(async (req) => {
   if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
   const token = authHeader.slice(7);
 
-  const supabase = createClient(
+  const authClient = createClient(
+    Deno.env.get("SB_URL")!,
+    Deno.env.get("SB_ANON_KEY")!,
+  );
+
+  const { data: { user }, error: authErr } = await authClient.auth.getUser(token);
+  if (authErr || !user) return json({ error: "invalid_token" }, 401);
+
+  const dbClient = createClient(
     Deno.env.get("SB_URL")!,
     Deno.env.get("SB_SERVICE_ROLE_KEY")!,
   );
-
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
   let body: { plan_code?: string };
   try {
@@ -44,7 +49,7 @@ serve(async (req) => {
   }
 
   if (plan_code === "free") {
-    const { error: dbErr } = await supabase.from("subscriptions").upsert(
+    const { error: dbErr } = await dbClient.from("subscriptions").upsert(
       { user_id: user.id, provider: "mercadopago", status: "active", provider_ref: null, current_period_end: null },
       { onConflict: "user_id,provider" },
     );
@@ -100,7 +105,7 @@ serve(async (req) => {
   const provider_ref: string = mp.id;
   const init_point: string = mp.init_point;
 
-  const { error: dbErr } = await supabase.from("subscriptions").upsert(
+  const { error: dbErr } = await dbClient.from("subscriptions").upsert(
     {
       user_id: user.id,
       provider: "mercadopago",
