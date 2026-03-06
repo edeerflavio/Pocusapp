@@ -14,7 +14,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = 'public', 'auth'
+set search_path = 'public','auth'
 as $$
   select exists (
     select 1 from public.app_roles
@@ -33,7 +33,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = 'public', 'auth'
+set search_path = 'public','auth'
 as $$
   select exists (
     select 1 from public.app_roles
@@ -63,7 +63,7 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = 'public', 'auth'
+set search_path = 'public','auth'
 as $$
 begin
   insert into profiles (id, full_name)
@@ -142,7 +142,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = 'public', 'auth'
+set search_path = 'public','auth'
 as $$
   select exists (
     select 1 from public.entitlements
@@ -291,27 +291,15 @@ alter table public.media_assets enable row level security;
 
 create index idx_media_assets_owner on public.media_assets(owner_type, owner_id);
 
+-- SELECT: media is visible when its parent content row is published.
+-- Each branch resolves owner_type to the correct table.
 create policy "select_media_via_parent" on public.media_assets
   for select using (
-    (owner_type = 'drugs' and exists (
-      select 1 from public.drugs d
-      where d.id = media_assets.owner_id
-    ))
-    or
-    (owner_type = 'diseases' and exists (
-      select 1 from public.diseases di
-      where di.id = media_assets.owner_id
-    ))
-    or
-    (owner_type = 'protocols' and exists (
-      select 1 from public.protocols p
-      where p.id = media_assets.owner_id
-    ))
-    or
-    (owner_type = 'pocus_items' and exists (
-      select 1 from public.pocus_items pi
-      where pi.id = media_assets.owner_id
-    ))
+    (owner_type = 'drugs'      and exists (select 1 from public.drugs      d where d.id = media_assets.owner_id and d.status = 'published'))
+    or (owner_type = 'diseases'   and exists (select 1 from public.diseases   d where d.id = media_assets.owner_id and d.status = 'published'))
+    or (owner_type = 'protocols'  and exists (select 1 from public.protocols  p where p.id = media_assets.owner_id and p.status = 'published'))
+    or (owner_type = 'pocus_items' and exists (select 1 from public.pocus_items i where i.id = media_assets.owner_id and i.status = 'published'))
+    or public.is_admin_or_editor()
   );
 
 create policy "admin_insert_media" on public.media_assets
