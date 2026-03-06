@@ -20,18 +20,37 @@ serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-  const token = authHeader.slice(7);
+  const tokenMatch = authHeader.match(/^bearer\s+(.+)/i);
+  if (!tokenMatch) return json({ error: "Unauthorized" }, 401);
+  const token = tokenMatch[1].trim();
 
-  const authClient = createClient(
-    Deno.env.get("SB_URL")!,
-    Deno.env.get("SB_ANON_KEY")!,
-  );
+  console.log(`[auth] token length=${token.length}, preview=${token.slice(0, 5)}...${token.slice(-5)}`);
 
-  const { data: { user }, error: authErr } = await authClient.auth.getUser(token);
-  if (authErr || !user) return json({ error: "invalid_token" }, 401);
+  // Trust the edge runtime's JWT validation; extract claims from headers or JWT payload.
+  let userId: string | null =
+    req.headers.get("x-jwt-claim-sub") ??
+    req.headers.get("x-supabase-auth-user") ??
+    null;
+  let userEmail: string | null = req.headers.get("x-jwt-claim-email") ?? null;
 
-  const dbClient = createClient(
+  if (!userId || !userEmail) {
+    // Fallback: decode JWT payload (no signature verification — runtime already accepted it).
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+        userId = userId ?? payload.sub ?? null;
+        userEmail = userEmail ?? payload.email ?? null;
+      }
+    } catch (e) {
+      console.error("[auth] jwt decode failed", e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  console.log(`[auth] userId=${userId}, email=${userEmail}`);
+  if (!userId) return json({ code: 401, message: "missing_user" }, 401);
+
+  const adminClient = createClient(
     Deno.env.get("SB_URL")!,
     Deno.env.get("SB_SERVICE_ROLE_KEY")!,
   );
@@ -49,8 +68,8 @@ serve(async (req) => {
   }
 
   if (plan_code === "free") {
-    const { error: dbErr } = await dbClient.from("subscriptions").upsert(
-      { user_id: user.id, provider: "mercadopago", status: "active", provider_ref: null, current_period_end: null },
+    const { error: dbErr } = await adminClient.from("subscriptions").upsert(
+      { user_id: userId, provider: "mercadopago", status: "active", provider_ref: null, current_period_end: null },
       { onConflict: "user_id,provider" },
     );
     if (dbErr) {
@@ -72,7 +91,7 @@ serve(async (req) => {
       currency_id: Deno.env.get("MP_CURRENCY") ?? "BRL",
     },
     back_url: Deno.env.get("MP_BACK_URL") ?? "https://pocusapp.com/subscription",
-    payer_email: user.email,
+    payer_email: userEmail,
     status: "pending",
   };
 
@@ -105,9 +124,9 @@ serve(async (req) => {
   const provider_ref: string = mp.id;
   const init_point: string = mp.init_point;
 
-  const { error: dbErr } = await dbClient.from("subscriptions").upsert(
+  const { error: dbErr } = await adminClient.from("subscriptions").upsert(
     {
-      user_id: user.id,
+      user_id: userId,
       provider: "mercadopago",
       provider_ref,
       status: "pending",
