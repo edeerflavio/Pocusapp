@@ -7,7 +7,7 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF121212),
       colorScheme: const ColorScheme.dark(
-        background: Color(0xFF121212),
+        surface: Color(0xFF121212),
         primary: Colors.blueAccent, // High contrast for UTI readability
         onPrimary: Colors.white,
       ),
