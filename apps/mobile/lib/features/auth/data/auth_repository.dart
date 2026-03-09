@@ -21,14 +21,15 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   @override
   Future<PowerSyncCredentials?> fetchCredentials() async {
-    final session = supabase.auth.currentSession;
-    if (session == null) {
-      return null;
-    }
+    // Refresh se o token estiver expirado ou próximo de expirar
+    final response = await supabase.auth.refreshSession();
+    final session = response.session ?? supabase.auth.currentSession;
+    if (session == null) return null;
 
     return PowerSyncCredentials(
       endpoint: const String.fromEnvironment('POWERSYNC_URL'),
       token: session.accessToken,
+      userId: session.user.id,
     );
   }
 
