@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -128,9 +129,11 @@ class MediaCacheManager {
   Future<String?> _download(String assetId, String storagePath) async {
     try {
       // 1. Fetch a short-lived signed URL — token is never stored.
+      // Timeout prevents indefinite hang when the device is offline.
       final signedUrl = await Supabase.instance.client.storage
           .from(_kMediaBucket)
-          .createSignedUrl(storagePath, _kSignedUrlTtl);
+          .createSignedUrl(storagePath, _kSignedUrlTtl)
+          .timeout(const Duration(seconds: 10));
 
       // 2. Determine local destination path.
       final ext = p.extension(storagePath).isNotEmpty
@@ -163,6 +166,8 @@ class MediaCacheManager {
       } finally {
         httpClient.close();
       }
+    } on TimeoutException {
+      return null;
     } catch (_) {
       return null;
     }

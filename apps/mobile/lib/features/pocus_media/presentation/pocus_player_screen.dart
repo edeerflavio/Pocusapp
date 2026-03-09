@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
+import '../data/models/media_asset.dart';
 import '../data/models/pocus_item.dart';
 import '../data/pocus_repository.dart';
 
@@ -20,6 +21,16 @@ class PocusPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
+  // Futures are cached by asset ID so FutureBuilder never receives a new
+  // Future object on widget rebuild (stream update → rebuild would otherwise
+  // reset FutureBuilder to ConnectionState.waiting indefinitely).
+  final Map<String, Future<String?>> _pathFutures = {};
+
+  Future<String?> _pathFor(MediaAsset asset) {
+    return _pathFutures[asset.id] ??=
+        ref.read(pocusRepositoryProvider).resolveLocalPath(asset);
+  }
+
   @override
   Widget build(BuildContext context) {
     final asyncAssets = ref.watch(watchMediaAssetsProvider(widget.pocusItem.id));
@@ -50,7 +61,7 @@ class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
           final videoAsset = videoAssets.first;
 
           return FutureBuilder<String?>(
-            future: ref.read(pocusRepositoryProvider).resolveLocalPath(videoAsset),
+            future: _pathFor(videoAsset),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
