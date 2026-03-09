@@ -6,14 +6,14 @@
 
 -- 1. Create the private bucket (signed URLs required for access)
 insert into storage.buckets (id, name, public)
-values ('media', 'media', false)
+values ('pocus_media', 'pocus_media', false)
 on conflict (id) do nothing;
 
 -- 2. Authenticated users can READ objects (enables createSignedUrl)
 create policy "authenticated_read_media"
 on storage.objects for select
 using (
-  bucket_id = 'media'
+  bucket_id = 'pocus_media'
   and auth.role() = 'authenticated'
 );
 
@@ -21,7 +21,7 @@ using (
 create policy "admin_insert_media_objects"
 on storage.objects for insert
 with check (
-  bucket_id = 'media'
+  bucket_id = 'pocus_media'
   and public.is_admin_or_editor()
 );
 
@@ -29,7 +29,7 @@ with check (
 create policy "admin_update_media_objects"
 on storage.objects for update
 using (
-  bucket_id = 'media'
+  bucket_id = 'pocus_media'
   and public.is_admin_or_editor()
 );
 
@@ -37,6 +37,6 @@ using (
 create policy "admin_delete_media_objects"
 on storage.objects for delete
 using (
-  bucket_id = 'media'
+  bucket_id = 'pocus_media'
   and public.is_admin_or_editor()
 );
