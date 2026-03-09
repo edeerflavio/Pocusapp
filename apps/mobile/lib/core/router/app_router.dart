@@ -59,8 +59,12 @@ GoRouter appRouter(AppRouterRef ref) {
                 routes: [
                   GoRoute(
                     path: 'disease/:id',
+                    redirect: (context, state) {
+                      if (state.extra is! Disease) return '/guide';
+                      return null;
+                    },
                     builder: (context, state) {
-                      final disease = state.extra as Disease;
+                      final disease = state.extra! as Disease;
                       return DiseaseDetailsScreen(disease: disease);
                     },
                   ),
@@ -76,8 +80,12 @@ GoRouter appRouter(AppRouterRef ref) {
                 routes: [
                   GoRoute(
                     path: 'player/:id',
+                    redirect: (context, state) {
+                      if (state.extra is! PocusItem) return '/pocus';
+                      return null;
+                    },
                     builder: (context, state) {
-                      final item = state.extra as PocusItem;
+                      final item = state.extra! as PocusItem;
                       return PocusPlayerScreen(pocusItem: item);
                     },
                   ),

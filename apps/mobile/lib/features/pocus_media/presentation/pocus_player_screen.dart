@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -21,14 +22,18 @@ class PocusPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
-  // Futures are cached by asset ID so FutureBuilder never receives a new
-  // Future object on widget rebuild (stream update → rebuild would otherwise
-  // reset FutureBuilder to ConnectionState.waiting indefinitely).
+  // Stored once per asset ID. Never recreated on stream updates — prevents
+  // FutureBuilder from resetting to ConnectionState.waiting on each rebuild.
   final Map<String, Future<String?>> _pathFutures = {};
 
   Future<String?> _pathFor(MediaAsset asset) {
-    return _pathFutures[asset.id] ??=
-        ref.read(pocusRepositoryProvider).resolveLocalPath(asset);
+    return _pathFutures[asset.id] ??= ref
+        .read(pocusRepositoryProvider)
+        .resolveLocalPath(asset)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => null,
+        );
   }
 
   @override
@@ -52,17 +57,16 @@ class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
           if (videoAssets.isEmpty) {
             return const Center(
               child: Text(
-                'Nenhum vídeo disponível',
+                'Nenhum vídeo vinculado a este item.',
                 style: TextStyle(color: Colors.white),
               ),
             );
           }
 
-          final videoAsset = videoAssets.first;
-
           return FutureBuilder<String?>(
-            future: _pathFor(videoAsset),
+            future: _pathFor(videoAssets.first),
             builder: (context, snapshot) {
+              // Spinner SOMENTE enquanto o Future está em andamento.
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: Column(
@@ -79,17 +83,17 @@ class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
                 );
               }
 
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-                return Center(
+              // ConnectionState.done — sai do spinner independentemente do resultado.
+              final localPath = snapshot.data;
+              if (snapshot.hasError || localPath == null || localPath.isEmpty) {
+                return const Center(
                   child: Text(
-                    'Erro ao carregar o vídeo offline.\n${snapshot.error ?? "Vídeo não encontrado."}',
-                    style: const TextStyle(color: Colors.white),
+                    'Erro: Vídeo não pôde ser carregado.',
+                    style: TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 );
               }
-
-              final localPath = snapshot.data!;
 
               return LocalVideoPlayer(localPath: localPath);
             },
@@ -100,6 +104,8 @@ class _PocusPlayerScreenState extends ConsumerState<PocusPlayerScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 class LocalVideoPlayer extends StatefulWidget {
   const LocalVideoPlayer({super.key, required this.localPath});
   final String localPath;
@@ -109,42 +115,85 @@ class LocalVideoPlayer extends StatefulWidget {
 }
 
 class _LocalVideoPlayerState extends State<LocalVideoPlayer> {
-  late VideoPlayerController _controller;
-  bool _initialized = false;
+  VideoPlayerController? _controller;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.file(File(widget.localPath));
-    _controller.initialize().then((_) {
-      if (mounted) {
-        _controller.setLooping(true);
-        _controller.setVolume(0.0);
-        _controller.play();
-        setState(() {
-          _initialized = true;
-        });
+    _init();
+  }
+
+  Future<void> _init() async {
+    final file = File(widget.localPath);
+    final exists = await file.exists();
+    final size = exists ? await file.length() : 0;
+
+    if (!exists || size == 0) {
+      if (mounted) setState(() => _error = 'Arquivo de vídeo inválido ou vazio.');
+      return;
+    }
+
+    try {
+      final controller = VideoPlayerController.file(file);
+
+      // Timeout no initialize() evita que o ExoPlayer trave silenciosamente
+      // em arquivos corrompidos (sem exception, sem completar o Future).
+      await controller.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException(
+          'VideoPlayerController.initialize() excedeu 15s.',
+        ),
+      );
+
+      if (!mounted) {
+        controller.dispose();
+        return;
       }
-    });
+
+      // Atribuído via setState imediatamente após initialize() para que
+      // build() use _controller.value.isInitialized como fonte de verdade.
+      setState(() => _controller = controller);
+
+      controller.setLooping(true);
+      controller.setVolume(0.0);
+      controller.play();
+    } on TimeoutException {
+      if (mounted) setState(() => _error = 'Tempo limite ao carregar o vídeo.');
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Erro ao reproduzir o vídeo.');
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
+    if (_error != null) {
+      return Center(
+        child: Text(
+          _error!,
+          style: const TextStyle(color: Colors.white),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    // Spinner baseado em _controller.value.isInitialized — fonte de verdade
+    // do VideoPlayerController, não de um bool interno separado.
+    if (_controller == null || !_controller!.value.isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
+
     return Center(
       child: AspectRatio(
-        aspectRatio: _controller.value.aspectRatio,
-        child: VideoPlayer(_controller),
+        aspectRatio: _controller!.value.aspectRatio,
+        child: VideoPlayer(_controller!),
       ),
     );
   }
 }
-
