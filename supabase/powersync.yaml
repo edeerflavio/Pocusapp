@@ -1,0 +1,63 @@
+# PowerSync Sync Rules for Pocusapp
+# Defines which data syncs to mobile devices via PowerSync.
+# Ref: https://docs.powersync.com/usage/sync-rules
+
+bucket_definitions:
+  # ------------------------------------------------------------------
+  # Global content buckets (read-only on client, same data for everyone)
+  # ------------------------------------------------------------------
+  global_content:
+    # All published content syncs to every authenticated user
+    parameters: SELECT token_parameters.user_id AS user_id
+    data:
+      - SELECT id, slug, title_pt, title_es, body_pt, body_es, is_premium, status, updated_at
+        FROM drugs
+        WHERE status = 'published'
+
+      - SELECT id, slug, title_pt, title_es, body_pt, body_es, is_premium, status, updated_at
+        FROM diseases
+        WHERE status = 'published'
+
+      - SELECT id, slug, title_pt, title_es, body_pt, body_es, is_premium, status, updated_at
+        FROM protocols
+        WHERE status = 'published'
+
+      - SELECT id, category, title_pt, title_es, body_pt, body_es, is_premium, status, updated_at
+        FROM pocus_items
+        WHERE status = 'published'
+
+      - SELECT id, owner_type, owner_id, kind, path, thumb_path, created_at
+        FROM media_assets
+
+      - SELECT id, version, published_at, notes
+        FROM content_versions
+
+      - SELECT id, code, name_pt, name_es, active
+        FROM plans
+        WHERE active = true
+
+  # ------------------------------------------------------------------
+  # Per-user buckets (private data)
+  # ------------------------------------------------------------------
+  user_data:
+    parameters: SELECT token_parameters.user_id AS user_id
+    data:
+      - SELECT id, full_name, locale, created_at
+        FROM profiles
+        WHERE id = bucket.user_id
+
+      - SELECT id, user_id, provider, provider_ref, status, current_period_end, created_at
+        FROM subscriptions
+        WHERE user_id = bucket.user_id
+
+      - SELECT id, user_id, plan_code, active, starts_at, ends_at, updated_at
+        FROM entitlements
+        WHERE user_id = bucket.user_id
+
+      - SELECT user_id, item_type, item_id, created_at
+        FROM favorites
+        WHERE user_id = bucket.user_id
+
+      - SELECT user_id, item_type, item_id, last_opened_at
+        FROM recent_items
+        WHERE user_id = bucket.user_id
