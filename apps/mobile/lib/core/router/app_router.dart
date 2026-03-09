@@ -5,7 +5,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/clinical_guide/presentation/clinical_guide_screen.dart';
+import '../../features/clinical_guide/presentation/disease_details_screen.dart';
+import '../../features/clinical_guide/data/models/disease.dart';
 import '../../features/pocus_media/presentation/pocus_screen.dart';
+import '../../features/pocus_media/presentation/pocus_player_screen.dart';
+import '../../features/pocus_media/data/models/pocus_item.dart';
 import '../../features/account/presentation/account_screen.dart';
 import '../../../simulator/ui/simulator_screen.dart';
 import 'main_navigation.dart';
@@ -52,6 +56,15 @@ GoRouter appRouter(AppRouterRef ref) {
               GoRoute(
                 path: '/guide',
                 builder: (context, state) => const ClinicalGuideScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'disease/:id',
+                    builder: (context, state) {
+                      final disease = state.extra as Disease;
+                      return DiseaseDetailsScreen(disease: disease);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -60,6 +73,15 @@ GoRouter appRouter(AppRouterRef ref) {
               GoRoute(
                 path: '/pocus',
                 builder: (context, state) => const PocusScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'player/:id',
+                    builder: (context, state) {
+                      final item = state.extra as PocusItem;
+                      return PocusPlayerScreen(pocusItem: item);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
