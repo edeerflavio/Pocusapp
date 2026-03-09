@@ -1,0 +1,19 @@
+﻿Analyzing mobile...
+
+warning - lib\features\pocus_media\data\media_cache_manager.dart:112:55 - This 'onError' handler must return a value assignable to 'FileSystemEntity', but ends without returning a value. Try adding a return statement. - body_might_complete_normally_catch_error
+warning - lib\features\pocus_media\data\media_cache_manager.dart:121:57 - This 'onError' handler must return a value assignable to 'FileSystemEntity', but ends without returning a value. Try adding a return statement. - body_might_complete_normally_catch_error
+warning - lib\features\pocus_media\data\media_cache_manager.dart:186:53 - This 'onError' handler must return a value assignable to 'FileSystemEntity', but ends without returning a value. Try adding a return statement. - body_might_complete_normally_catch_error
+warning - lib\features\pocus_media\presentation\pocus_player_screen.dart:1:8 - Unused import: 'dart:io'. Try removing the import directive. - unused_import
+   info - lib\core\database\powersync_database.g.dart:23:31 - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\core\database\powersync_database.g.dart:38:32 - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\core\router\app_router.g.dart:22:24 - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\auth\data\auth_repository.g.dart:23:29 - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\auth\data\auth_repository.g.dart:38:31 - 'AutoDisposeStreamProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\clinical_guide\data\clinical_guide_repository.g.dart:26:7 - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\clinical_guide\data\clinical_guide_repository.g.dart:41:28 - 'AutoDisposeStreamProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\pocus_media\data\media_cache_manager.g.dart:24:32 - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\pocus_media\data\pocus_repository.g.dart:23:30 - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\pocus_media\data\pocus_repository.g.dart:39:30 - 'AutoDisposeStreamProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\pocus_media\data\pocus_repository.g.dart:178:30 - 'AutoDisposeStreamProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+15 issues found.

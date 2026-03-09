@@ -1,0 +1,12 @@
+Analyzing mobile...                                             
+
+warning - The URI 'package:flutter_lints/flutter.yaml' included in 'D:\Pocusapp\apps\mobile\analysis_options.yaml' can't be found when analyzing 'D:\Pocusapp\apps\mobile' - analysis_options.yaml:10:10 - include_file_not_found
+   info - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\core\database\powersync_database.g.dart:23:31 - deprecated_member_use
+   info - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\core\database\powersync_database.g.dart:38:32 - deprecated_member_use
+   info - 'ProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\core\router\app_router.g.dart:22:24 - deprecated_member_use
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\core\theme\app_theme.dart:10:9 - deprecated_member_use
+   info - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\features\auth\data\auth_repository.g.dart:23:29 - deprecated_member_use
+   info - 'AutoDisposeStreamProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\features\auth\data\auth_repository.g.dart:38:31 - deprecated_member_use
+  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+
+8 issues found. (ran in 19.9s)

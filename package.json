@@ -1,0 +1,27 @@
+{
+  "name": "pocusapp",
+  "version": "1.0.0",
+  "description": "Bem-vindo ao repositório unificado do Pocusapp 2.0! Esta é a base estrutural que sustenta nossa aplicação, separando responsabilidades de forma clara entre aplicativos, funções no servidor e definições de banco de dados.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edeerflavio/Pocusapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/edeerflavio/Pocusapp/issues"
+  },
+  "homepage": "https://github.com/edeerflavio/Pocusapp#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.98.0"
+  }
+}
