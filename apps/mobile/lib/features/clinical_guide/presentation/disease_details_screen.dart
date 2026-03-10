@@ -21,23 +21,23 @@ class DiseaseDetailsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'CID: ${disease.cid}',
+              'Slug: ${disease.slug}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 24),
             Text(
-              'Descrição',
+              'Conteúdo (PT)',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            Text(disease.description),
+            Text(disease.bodyPt.isEmpty ? '—' : disease.bodyPt),
             const SizedBox(height: 24),
             Text(
-              'Tratamento',
+              'Conteúdo (ES)',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            Text(disease.treatment),
+            Text(disease.bodyEs.isEmpty ? '—' : disease.bodyEs),
           ],
         ),
       ),

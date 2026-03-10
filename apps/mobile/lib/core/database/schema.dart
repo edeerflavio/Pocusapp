@@ -47,6 +47,19 @@ const schema = Schema([
     Column.text('thumb_path'),
     Column.text('updated_at'),
   ]),
+  Table('clinical_guides', [
+    Column.text('slug'),
+    Column.text('title'),
+    Column.text('scenario'),    // 'emergencia' | 'enfermaria' | 'ubs' | 'geral'
+    Column.text('specialty'),
+    Column.text('summary'),
+    Column.text('content_json'), // JSON string — parsed in model
+    Column.text('tags'),         // JSON array string
+    Column.text('source'),
+    Column.text('version'),
+    Column.text('status'),
+    Column.text('updated_at'),
+  ]),
   Table('favorites', [
     Column.text('user_id'),
     Column.text('item_type'),
@@ -57,7 +70,7 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('item_type'),
     Column.text('item_id'),
-    Column.text('accessed_at'),
+    Column.text('last_opened_at'),
   ]),
   // Local-only: tracks which media files are cached on disk.
   // Never synced to Supabase. Managed entirely by MediaCacheManager.

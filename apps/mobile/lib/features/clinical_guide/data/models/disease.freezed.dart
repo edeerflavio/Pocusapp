@@ -17,10 +17,13 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$Disease {
   String get id => throw _privateConstructorUsedError;
+  String get slug => throw _privateConstructorUsedError;
   String get titlePt => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
-  String get cid => throw _privateConstructorUsedError;
-  String get treatment => throw _privateConstructorUsedError;
+  String get titleEs => throw _privateConstructorUsedError;
+  String get bodyPt => throw _privateConstructorUsedError;
+  String get bodyEs => throw _privateConstructorUsedError;
+  bool get isPremium => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $DiseaseCopyWith<Disease> get copyWith => throw _privateConstructorUsedError;
@@ -33,10 +36,13 @@ abstract class $DiseaseCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      String slug,
       String titlePt,
-      String description,
-      String cid,
-      String treatment});
+      String titleEs,
+      String bodyPt,
+      String bodyEs,
+      bool isPremium,
+      String status});
 }
 
 /// @nodoc
@@ -53,31 +59,46 @@ class _$DiseaseCopyWithImpl<$Res, $Val extends Disease>
   @override
   $Res call({
     Object? id = null,
+    Object? slug = null,
     Object? titlePt = null,
-    Object? description = null,
-    Object? cid = null,
-    Object? treatment = null,
+    Object? titleEs = null,
+    Object? bodyPt = null,
+    Object? bodyEs = null,
+    Object? isPremium = null,
+    Object? status = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
       titlePt: null == titlePt
           ? _value.titlePt
           : titlePt // ignore: cast_nullable_to_non_nullable
               as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
+      titleEs: null == titleEs
+          ? _value.titleEs
+          : titleEs // ignore: cast_nullable_to_non_nullable
               as String,
-      cid: null == cid
-          ? _value.cid
-          : cid // ignore: cast_nullable_to_non_nullable
+      bodyPt: null == bodyPt
+          ? _value.bodyPt
+          : bodyPt // ignore: cast_nullable_to_non_nullable
               as String,
-      treatment: null == treatment
-          ? _value.treatment
-          : treatment // ignore: cast_nullable_to_non_nullable
+      bodyEs: null == bodyEs
+          ? _value.bodyEs
+          : bodyEs // ignore: cast_nullable_to_non_nullable
+              as String,
+      isPremium: null == isPremium
+          ? _value.isPremium
+          : isPremium // ignore: cast_nullable_to_non_nullable
+              as bool,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
               as String,
     ) as $Val);
   }
@@ -92,10 +113,13 @@ abstract class _$$DiseaseImplCopyWith<$Res> implements $DiseaseCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      String slug,
       String titlePt,
-      String description,
-      String cid,
-      String treatment});
+      String titleEs,
+      String bodyPt,
+      String bodyEs,
+      bool isPremium,
+      String status});
 }
 
 /// @nodoc
@@ -110,31 +134,46 @@ class __$$DiseaseImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? slug = null,
     Object? titlePt = null,
-    Object? description = null,
-    Object? cid = null,
-    Object? treatment = null,
+    Object? titleEs = null,
+    Object? bodyPt = null,
+    Object? bodyEs = null,
+    Object? isPremium = null,
+    Object? status = null,
   }) {
     return _then(_$DiseaseImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
       titlePt: null == titlePt
           ? _value.titlePt
           : titlePt // ignore: cast_nullable_to_non_nullable
               as String,
-      description: null == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
+      titleEs: null == titleEs
+          ? _value.titleEs
+          : titleEs // ignore: cast_nullable_to_non_nullable
               as String,
-      cid: null == cid
-          ? _value.cid
-          : cid // ignore: cast_nullable_to_non_nullable
+      bodyPt: null == bodyPt
+          ? _value.bodyPt
+          : bodyPt // ignore: cast_nullable_to_non_nullable
               as String,
-      treatment: null == treatment
-          ? _value.treatment
-          : treatment // ignore: cast_nullable_to_non_nullable
+      bodyEs: null == bodyEs
+          ? _value.bodyEs
+          : bodyEs // ignore: cast_nullable_to_non_nullable
+              as String,
+      isPremium: null == isPremium
+          ? _value.isPremium
+          : isPremium // ignore: cast_nullable_to_non_nullable
+              as bool,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -145,25 +184,34 @@ class __$$DiseaseImplCopyWithImpl<$Res>
 class _$DiseaseImpl implements _Disease {
   const _$DiseaseImpl(
       {required this.id,
+      required this.slug,
       required this.titlePt,
-      required this.description,
-      required this.cid,
-      required this.treatment});
+      required this.titleEs,
+      required this.bodyPt,
+      required this.bodyEs,
+      required this.isPremium,
+      required this.status});
 
   @override
   final String id;
   @override
+  final String slug;
+  @override
   final String titlePt;
   @override
-  final String description;
+  final String titleEs;
   @override
-  final String cid;
+  final String bodyPt;
   @override
-  final String treatment;
+  final String bodyEs;
+  @override
+  final bool isPremium;
+  @override
+  final String status;
 
   @override
   String toString() {
-    return 'Disease(id: $id, titlePt: $titlePt, description: $description, cid: $cid, treatment: $treatment)';
+    return 'Disease(id: $id, slug: $slug, titlePt: $titlePt, titleEs: $titleEs, bodyPt: $bodyPt, bodyEs: $bodyEs, isPremium: $isPremium, status: $status)';
   }
 
   @override
@@ -172,17 +220,19 @@ class _$DiseaseImpl implements _Disease {
         (other.runtimeType == runtimeType &&
             other is _$DiseaseImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.titlePt, titlePt) || other.titlePt == titlePt) &&
-            (identical(other.description, description) ||
-                other.description == description) &&
-            (identical(other.cid, cid) || other.cid == cid) &&
-            (identical(other.treatment, treatment) ||
-                other.treatment == treatment));
+            (identical(other.titleEs, titleEs) || other.titleEs == titleEs) &&
+            (identical(other.bodyPt, bodyPt) || other.bodyPt == bodyPt) &&
+            (identical(other.bodyEs, bodyEs) || other.bodyEs == bodyEs) &&
+            (identical(other.isPremium, isPremium) ||
+                other.isPremium == isPremium) &&
+            (identical(other.status, status) || other.status == status));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, titlePt, description, cid, treatment);
+  int get hashCode => Object.hash(runtimeType, id, slug, titlePt, titleEs,
+      bodyPt, bodyEs, isPremium, status);
 
   @JsonKey(ignore: true)
   @override
@@ -194,21 +244,30 @@ class _$DiseaseImpl implements _Disease {
 abstract class _Disease implements Disease {
   const factory _Disease(
       {required final String id,
+      required final String slug,
       required final String titlePt,
-      required final String description,
-      required final String cid,
-      required final String treatment}) = _$DiseaseImpl;
+      required final String titleEs,
+      required final String bodyPt,
+      required final String bodyEs,
+      required final bool isPremium,
+      required final String status}) = _$DiseaseImpl;
 
   @override
   String get id;
   @override
+  String get slug;
+  @override
   String get titlePt;
   @override
-  String get description;
+  String get titleEs;
   @override
-  String get cid;
+  String get bodyPt;
   @override
-  String get treatment;
+  String get bodyEs;
+  @override
+  bool get isPremium;
+  @override
+  String get status;
   @override
   @JsonKey(ignore: true)
   _$$DiseaseImplCopyWith<_$DiseaseImpl> get copyWith =>

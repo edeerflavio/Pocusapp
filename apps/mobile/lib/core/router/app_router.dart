@@ -4,9 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/login_screen.dart';
-import '../../features/clinical_guide/presentation/clinical_guide_screen.dart';
-import '../../features/clinical_guide/presentation/disease_details_screen.dart';
-import '../../features/clinical_guide/data/models/disease.dart';
+import '../../features/home/presentation/home_screen.dart';
+import '../../features/clinical_guide/presentation/clinical_guides_screen.dart';
+import '../../features/clinical_guide/presentation/clinical_guide_detail_screen.dart';
+import '../../features/clinical_guide/data/models/clinical_guide.dart';
 import '../../features/pocus_media/presentation/pocus_screen.dart';
 import '../../features/pocus_media/presentation/pocus_player_screen.dart';
 import '../../features/pocus_media/data/models/pocus_item.dart';
@@ -22,25 +23,25 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 GoRouter appRouter(AppRouterRef ref) {
   final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/guide',
+    initialLocation: '/home',
     redirect: (context, state) {
       final authState = ref.read(authStateChangesProvider);
       final session = authState.value?.session;
-      
+
       final isLoggingIn = state.matchedLocation == '/login';
-      
+
       if (session == null && !isLoggingIn) {
         return '/login';
       }
       if (session != null && isLoggingIn) {
-        return '/guide';
+        return '/home';
       }
       return null;
     },
     routes: [
       GoRoute(
         path: '/',
-        redirect: (_, __) => '/guide',
+        redirect: (_, __) => '/home',
       ),
       GoRoute(
         path: '/login',
@@ -51,27 +52,38 @@ GoRouter appRouter(AppRouterRef ref) {
           return MainNavigation(navigationShell: navigationShell);
         },
         branches: [
+          // Branch 0 — Home
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          // Branch 1 — Guia Clínico
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/guide',
-                builder: (context, state) => const ClinicalGuideScreen(),
+                builder: (context, state) => const ClinicalGuidesScreen(),
                 routes: [
                   GoRoute(
-                    path: 'disease/:id',
+                    path: 'detail/:slug',
                     redirect: (context, state) {
-                      if (state.extra is! Disease) return '/guide';
+                      if (state.extra is! ClinicalGuide) return '/guide';
                       return null;
                     },
                     builder: (context, state) {
-                      final disease = state.extra! as Disease;
-                      return DiseaseDetailsScreen(disease: disease);
+                      final guide = state.extra! as ClinicalGuide;
+                      return ClinicalGuideDetailScreen(guide: guide);
                     },
                   ),
                 ],
               ),
             ],
           ),
+          // Branch 2 — POCUS
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -93,6 +105,7 @@ GoRouter appRouter(AppRouterRef ref) {
               ),
             ],
           ),
+          // Branch 3 — Simulador
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -101,6 +114,7 @@ GoRouter appRouter(AppRouterRef ref) {
               ),
             ],
           ),
+          // Branch 4 — Conta
           StatefulShellBranch(
             routes: [
               GoRoute(

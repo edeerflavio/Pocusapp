@@ -26,19 +26,28 @@ class MainNavigation extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Início',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book_outlined),
+            activeIcon: Icon(Icons.menu_book),
             label: 'Guia Clínico',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.monitor_heart),
+            icon: Icon(Icons.monitor_heart_outlined),
+            activeIcon: Icon(Icons.monitor_heart),
             label: 'POCUS',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.schema),
+            icon: Icon(Icons.schema_outlined),
+            activeIcon: Icon(Icons.schema),
             label: 'Simulador',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
             label: 'Conta',
           ),
         ],

@@ -34,7 +34,7 @@ class _ClinicalGuideScreenState extends ConsumerState<ClinicalGuideScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar por nome ou CID...',
+                hintText: 'Buscar por nome...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
@@ -58,9 +58,9 @@ class _ClinicalGuideScreenState extends ConsumerState<ClinicalGuideScreen> {
                 }
                 
                 final filteredDiseases = diseases.where((disease) {
-                  final titleMatch = disease.titlePt.toLowerCase().contains(_searchQuery);
-                  final cidMatch = disease.cid.toLowerCase().contains(_searchQuery);
-                  return titleMatch || cidMatch;
+                  return disease.titlePt.toLowerCase().contains(_searchQuery) ||
+                      disease.titleEs.toLowerCase().contains(_searchQuery) ||
+                      disease.slug.toLowerCase().contains(_searchQuery);
                 }).toList();
 
                 if (filteredDiseases.isEmpty) {
@@ -73,7 +73,7 @@ class _ClinicalGuideScreenState extends ConsumerState<ClinicalGuideScreen> {
                     final disease = filteredDiseases[index];
                     return ListTile(
                       title: Text(disease.titlePt),
-                      subtitle: Text(disease.cid),
+                      subtitle: Text(disease.slug),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         context.go('/guide/disease/${disease.id}', extra: disease);

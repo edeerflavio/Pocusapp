@@ -6,7 +6,7 @@
 
 -- 1. Create the private bucket (signed URLs required for access)
 insert into storage.buckets (id, name, public)
-values ('pocus_media', 'pocus_media', false)
+values ('pocus-media', 'pocus-media', false)
 on conflict (id) do nothing;
 
 -- 2. Authenticated users can READ objects (enables createSignedUrl)
