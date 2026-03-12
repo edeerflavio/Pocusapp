@@ -136,6 +136,7 @@ const List<_CategoryData> _categories = [
     subtitle: 'Débito Cardíaco\nVolume Sistólico',
     icon: Icons.calculate_outlined,
     gradientColors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+    route: '/home/calculators',
   ),
   _CategoryData(
     title: 'Emergências',

@@ -2,24 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/clinical_catalog.dart';
 import '../data/clinical_guides_repository.dart';
-import '../data/models/clinical_guide.dart';
-
-// ---------------------------------------------------------------------------
-// Cenário labels e cores
-// ---------------------------------------------------------------------------
-
-const _scenarioMeta = {
-  'emergencia': (label: 'Emergência',  color: Color(0xFFC62828)),
-  'enfermaria': (label: 'Enfermaria',  color: Color(0xFF1565C0)),
-  'ubs':        (label: 'UBS / APS',   color: Color(0xFF2E7D32)),
-  'geral':      (label: 'Geral',       color: Color(0xFF546E7A)),
-};
+import '../data/models/clinical_category.dart';
+import '../data/models/guide_search_result.dart';
 
 // ---------------------------------------------------------------------------
 // ClinicalGuidesScreen
 // ---------------------------------------------------------------------------
 
+/// Hub screen for the Guia Clínico module.
+///
+/// Two modes:
+/// 1. **Browsing** (empty query): displays the static [ClinicalCatalog]
+///    category hierarchy — no DB access needed for this view.
+/// 2. **Search** (active query): runs a full-text search across all published
+///    guides fetched from PowerSync and shows results with breadcrumbs.
 class ClinicalGuidesScreen extends ConsumerStatefulWidget {
   const ClinicalGuidesScreen({super.key});
 
@@ -28,11 +26,9 @@ class ClinicalGuidesScreen extends ConsumerStatefulWidget {
       _ClinicalGuidesScreenState();
 }
 
-class _ClinicalGuidesScreenState
-    extends ConsumerState<ClinicalGuidesScreen> {
+class _ClinicalGuidesScreenState extends ConsumerState<ClinicalGuidesScreen> {
   final _searchCtrl = TextEditingController();
-  String _query       = '';
-  String _scenario    = 'todos'; // 'todos' | 'emergencia' | 'enfermaria' | 'ubs' | 'geral'
+  String _query = '';
 
   @override
   void dispose() {
@@ -40,132 +36,159 @@ class _ClinicalGuidesScreenState
     super.dispose();
   }
 
-  List<ClinicalGuide> _filter(List<ClinicalGuide> guides) {
-    return guides.where((g) {
-      final matchSearch = _query.isEmpty ||
-          g.title.toLowerCase().contains(_query) ||
-          g.specialty.toLowerCase().contains(_query) ||
-          g.tags.any((t) => t.toLowerCase().contains(_query));
-      final matchScenario = _scenario == 'todos' || g.scenario == _scenario;
-      return matchSearch && matchScenario;
-    }).toList();
+  void _clearSearch() {
+    _searchCtrl.clear();
+    setState(() => _query = '');
   }
+
+  bool get _isSearching => _query.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    final asyncGuides = ref.watch(watchClinicalGuidesProvider);
+    // Always watch the stream so search is instant when the user starts typing.
+    final guidesAsync = ref.watch(watchClinicalGuidesProvider);
+
+    // Build flat search index only when data is available.
+    final searchIndex = guidesAsync.valueOrNull != null
+        ? ClinicalCatalog.buildSearchIndex(guidesAsync.valueOrNull!)
+        : const <GuideSearchResult>[];
+
+    final searchResults = _isSearching
+        ? ClinicalCatalog.search(searchIndex, _query)
+        : const <GuideSearchResult>[];
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         slivers: [
-          _buildAppBar(context),
-          asyncGuides.when(
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (e, _) => SliverFillRemaining(
-              child: Center(child: Text('Erro: $e')),
-            ),
-            data: (guides) {
-              final filtered = _filter(guides);
-              if (filtered.isEmpty) {
-                return const SliverFillRemaining(
-                  child: _EmptyState(),
-                );
-              }
-              return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                sliver: SliverList.separated(
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _GuideCard(guide: filtered[i]),
+          _buildAppBar(),
+          if (!_isSearching) ...[
+            // ── Browsing mode: category list ───────────────────────────────
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  'Categorias',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[500],
+                    letterSpacing: 0.4,
+                  ),
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+              sliver: SliverList.separated(
+                itemCount: ClinicalCatalog.categories.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (_, i) =>
+                    _CategoryListItem(category: ClinicalCatalog.categories[i]),
+              ),
+            ),
+          ] else ...[
+            // ── Search mode: results ───────────────────────────────────────
+            if (guidesAsync.isLoading && searchIndex.isEmpty)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (searchResults.isEmpty)
+              SliverFillRemaining(child: _SearchEmptyState(query: _query))
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                sliver: SliverList.separated(
+                  itemCount: searchResults.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) =>
+                      _SearchResultItem(result: searchResults[i]),
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
 
-  SliverAppBar _buildAppBar(BuildContext context) {
+  SliverAppBar _buildAppBar() {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 180,
+      floating: false,
       backgroundColor: Colors.white,
       foregroundColor: Colors.black87,
       elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-        title: const Text(
-          'Guia Clínico',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+      surfaceTintColor: Colors.transparent,
+      title: const Text(
+        'Guia Clínico',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
         ),
-        background: Container(color: Colors.white),
       ),
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(96),
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Search bar
-              TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _query = v.toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: 'Buscar por título, especialidade ou tag...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _query = '');
-                          },
-                        )
-                      : null,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Scenario filter chips
-              SizedBox(
-                height: 32,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _FilterChip(
-                        label: 'Todos',
-                        value: 'todos',
-                        selected: _scenario,
-                        onTap: (v) => setState(() => _scenario = v)),
-                    ...(_scenarioMeta.entries.map(
-                      (e) => _FilterChip(
-                          label: e.value.label,
-                          value: e.key,
-                          selected: _scenario,
-                          color: e.value.color,
-                          onTap: (v) => setState(() => _scenario = v)),
-                    )),
-                  ],
-                ),
-              ),
-            ],
+        preferredSize: const Size.fromHeight(62),
+        child: _SearchBar(
+          controller: _searchCtrl,
+          onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+          onClear: _clearSearch,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search bar
+// ---------------------------------------------------------------------------
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Buscar protocolos, doenças, procedimentos...',
+          hintStyle: TextStyle(fontSize: 14, color: Colors.grey[400]),
+          prefixIcon: Icon(Icons.search_rounded, size: 20, color: Colors.grey[400]),
+          suffixIcon: controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  color: Colors.grey[500],
+                  onPressed: onClear,
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.grey[100],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
           ),
         ),
       ),
@@ -174,44 +197,50 @@ class _ClinicalGuidesScreenState
 }
 
 // ---------------------------------------------------------------------------
-// Filter chip
+// Category list item
 // ---------------------------------------------------------------------------
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.value,
-    required this.selected,
-    required this.onTap,
-    this.color = const Color(0xFF546E7A),
-  });
+class _CategoryListItem extends StatelessWidget {
+  const _CategoryListItem({required this.category});
 
-  final String label;
-  final String value;
-  final String selected;
-  final Color color;
-  final void Function(String) onTap;
+  final ClinicalCategory category;
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = value == selected;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: () => onTap(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected ? color : Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : Colors.grey[700],
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      child: InkWell(
+        onTap: () => context.go('/guide/category/${category.id}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: _CircleIconBadge(
+              icon: category.icon,
+              color: category.color,
+            ),
+            title: Text(
+              category.title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Colors.black87,
+              ),
+            ),
+            subtitle: Text(
+              category.subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                height: 1.3,
+              ),
+            ),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey[400],
             ),
           ),
         ),
@@ -220,99 +249,102 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Guide card
-// ---------------------------------------------------------------------------
+class _CircleIconBadge extends StatelessWidget {
+  const _CircleIconBadge({required this.icon, required this.color});
 
-class _GuideCard extends StatelessWidget {
-  const _GuideCard({required this.guide});
-
-  final ClinicalGuide guide;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final meta = _scenarioMeta[guide.scenario] ??
-        (label: 'Geral', color: const Color(0xFF546E7A));
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search result item
+// ---------------------------------------------------------------------------
+
+class _SearchResultItem extends StatelessWidget {
+  const _SearchResultItem({required this.result});
+
+  final GuideSearchResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final guide = result.guide;
 
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () =>
-            context.go('/guide/detail/${guide.slug}', extra: guide),
+        onTap: () => context.go('/guide/detail/${guide.slug}', extra: guide),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
             children: [
-              // Top row: scenario chip + version
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: meta.color.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      meta.label.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: meta.color,
-                        letterSpacing: 0.6,
+              // Icon
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1565C0).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.article_outlined,
+                  color: Color(0xFF1565C0),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      guide.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black87,
+                        height: 1.3,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'v${guide.version}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Title
-              Text(
-                guide.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  height: 1.2,
+                    if (result.breadcrumb != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        result.breadcrumb!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ] else if (guide.specialty.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        guide.specialty,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              // Specialty
-              Text(
-                guide.specialty,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 10),
-              // Summary preview
-              Text(
-                guide.summary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-              if (guide.tags.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: guide.tags
-                      .take(4)
-                      .map((t) => _TagBadge(tag: t))
-                      .toList(),
-                ),
-              ],
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
             ],
           ),
         ),
@@ -321,51 +353,34 @@ class _GuideCard extends StatelessWidget {
   }
 }
 
-class _TagBadge extends StatelessWidget {
-  const _TagBadge({required this.tag});
-  final String tag;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '#$tag',
-        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-      ),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Empty state
+// Empty search state
 // ---------------------------------------------------------------------------
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+class _SearchEmptyState extends StatelessWidget {
+  const _SearchEmptyState({required this.query});
+
+  final String query;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.search_off_outlined, size: 56, color: Colors.grey[300]),
+        Icon(Icons.search_off_rounded, size: 56, color: Colors.grey[300]),
         const SizedBox(height: 16),
         Text(
-          'Nenhum guia encontrado',
+          'Nenhum resultado para "$query"',
+          textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Colors.grey[500],
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          'Ajuste os filtros ou a busca',
+          'Tente outros termos clínicos',
           style: TextStyle(fontSize: 13, color: Colors.grey[400]),
         ),
       ],

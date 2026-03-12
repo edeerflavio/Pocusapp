@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:powersync/powersync.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,7 +20,16 @@ class ClinicalGuidesRepository {
           "WHERE status = 'published' "
           "ORDER BY scenario ASC, title ASC",
         )
-        .map((rs) => rs.map(ClinicalGuide.fromRow).toList());
+        .map((rs) {
+          debugPrint('DEBUG: Itens encontrados no SQLite: ${rs.length}');
+          if (rs.isNotEmpty) {
+            final first = rs.first;
+            debugPrint('DEBUG: Primeiro item — title="${first['title']}", '
+                'specialty="${first['specialty']}", status="${first['status']}", '
+                'tags="${first['tags']}"');
+          }
+          return rs.map(ClinicalGuide.fromRow).toList();
+        });
   }
 
   /// Single guide by slug — null if not found.

@@ -1,26 +1,81 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/models/pocus_item.dart';
+import '../data/pocus_repository.dart';
 
-// ---------------------------------------------------------------------------
-// PocusScreen — Protocol / Category List
-// Route: /pocus   (Branch 2 in StatefulShellRoute)
-// ---------------------------------------------------------------------------
-
-class PocusScreen extends StatelessWidget {
+class PocusScreen extends ConsumerWidget {
   const PocusScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final itemsAsync = ref.watch(watchPocusItemsProvider);
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 32),
-            sliver: _ProtocolList(),
+          itemsAsync.when(
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => SliverFillRemaining(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Erro ao carregar protocolos.\nVerifique sua conexão.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        e.toString(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Nenhum protocolo encontrado.\nAguarde a sincronização.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                sliver: SliverList.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    return _ProtocolCard(item: items[index]);
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -64,151 +119,83 @@ class PocusScreen extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Protocol data model
-// ---------------------------------------------------------------------------
-
-class _Protocol {
-  const _Protocol({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.category,
-  });
-
-  final String id;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final String category;
-
-  PocusItem toMockItem() => PocusItem(
-        id: id,
-        category: category,
-        titlePt: title,
-        titleEs: title,
-        bodyPt: '',
-        bodyEs: '',
-        isPremium: false,
-        status: 'published',
-      );
-}
-
-const List<_Protocol> _protocols = [
-  _Protocol(
-    id: 'pocus-cardiac',
-    title: 'Cardíaco',
-    subtitle: 'Função ventricular, derrame pericárdico e tamponamento',
-    icon: Icons.favorite_border,
-    color: Color(0xFFE53935),
-    category: 'Cardíaco',
-  ),
-  _Protocol(
-    id: 'pocus-pulmonar',
-    title: 'Pulmonar',
-    subtitle: 'Pneumotórax, derrame pleural e consolidação',
-    icon: Icons.air_outlined,
-    color: Color(0xFF1565C0),
-    category: 'Pulmonar',
-  ),
-  _Protocol(
-    id: 'pocus-fast',
-    title: 'FAST',
-    subtitle: 'Focused Assessment with Sonography in Trauma',
-    icon: Icons.emergency_outlined,
-    color: Color(0xFFE65100),
-    category: 'FAST',
-  ),
-  _Protocol(
-    id: 'pocus-rush',
-    title: 'RUSH',
-    subtitle: 'Rapid Ultrasound in Shock — avaliação do choque',
-    icon: Icons.monitor_heart_outlined,
-    color: Color(0xFF6A1B9A),
-    category: 'RUSH',
-  ),
-  _Protocol(
-    id: 'pocus-casa',
-    title: 'CASA',
-    subtitle: 'Cardiac Arrest Sonographic Assessment',
-    icon: Icons.local_hospital_outlined,
-    color: Color(0xFF00695C),
-    category: 'CASA',
-  ),
-  _Protocol(
-    id: 'pocus-dtc',
-    title: 'DTC',
-    subtitle: 'Doppler Transcraniano — vasospasmo e HSA',
-    icon: Icons.hub_outlined,
-    color: Color(0xFF37474F),
-    category: 'DTC',
-  ),
-];
-
-// ---------------------------------------------------------------------------
-// Sliver list
-// ---------------------------------------------------------------------------
-
-class _ProtocolList extends StatelessWidget {
-  const _ProtocolList();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverList.separated(
-      itemCount: _protocols.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        return _ProtocolCard(protocol: _protocols[index]);
-      },
-    );
+IconData _iconForCategory(String category) {
+  switch (category.toLowerCase()) {
+    case 'cardiaco':
+    case 'cardíaco':
+      return Icons.favorite_border;
+    case 'pulmonar':
+      return Icons.air_outlined;
+    case 'fast':
+      return Icons.emergency_outlined;
+    case 'rush':
+      return Icons.monitor_heart_outlined;
+    case 'casa':
+      return Icons.local_hospital_outlined;
+    case 'dtc':
+      return Icons.hub_outlined;
+    default:
+      return Icons.radar_outlined;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Protocol card
-// ---------------------------------------------------------------------------
+Color _colorForCategory(String category) {
+  switch (category.toLowerCase()) {
+    case 'cardiaco':
+    case 'cardíaco':
+      return const Color(0xFFE53935);
+    case 'pulmonar':
+      return const Color(0xFF1565C0);
+    case 'fast':
+      return const Color(0xFFE65100);
+    case 'rush':
+      return const Color(0xFF6A1B9A);
+    case 'casa':
+      return const Color(0xFF00695C);
+    case 'dtc':
+      return const Color(0xFF37474F);
+    default:
+      return const Color(0xFF455A64);
+  }
+}
 
 class _ProtocolCard extends StatelessWidget {
-  const _ProtocolCard({required this.protocol});
+  const _ProtocolCard({required this.item});
 
-  final _Protocol protocol;
+  final PocusItem item;
 
   @override
   Widget build(BuildContext context) {
+    final icon = _iconForCategory(item.category);
+    final color = _colorForCategory(item.category);
+    final subtitle = item.bodyPt.isNotEmpty ? item.bodyPt : item.category;
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          final item = protocol.toMockItem();
-          context.go('/pocus/player/${item.id}', extra: item);
-        },
+        onTap: () => context.go('/pocus/player/${item.id}', extra: item),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // Icon badge
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: protocol.color.withValues(alpha: 0.10),
+                  color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(protocol.icon, color: protocol.color, size: 24),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 14),
-              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      protocol.title,
+                      item.titlePt,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -217,7 +204,9 @@ class _ProtocolCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      protocol.subtitle,
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -228,6 +217,11 @@ class _ProtocolCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
+              if (item.isPremium)
+                const Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Icon(Icons.star, color: Color(0xFFF9A825), size: 16),
+                ),
               Icon(Icons.chevron_right, color: Colors.grey[400]),
             ],
           ),

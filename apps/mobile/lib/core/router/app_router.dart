@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../database/powersync_database.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/calculators/presentation/calculator_detail_screen.dart';
+import '../../features/calculators/presentation/calculators_hub_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/clinical_guide/presentation/clinical_guides_screen.dart';
 import '../../features/clinical_guide/presentation/clinical_guide_detail_screen.dart';
+import '../../features/clinical_guide/presentation/clinical_topic_screen.dart';
+import '../../features/clinical_guide/presentation/clinical_guides_by_topic_screen.dart';
 import '../../features/clinical_guide/data/models/clinical_guide.dart';
 import '../../features/pocus_media/presentation/pocus_screen.dart';
 import '../../features/pocus_media/presentation/pocus_player_screen.dart';
@@ -34,6 +40,10 @@ GoRouter appRouter(AppRouterRef ref) {
         return '/login';
       }
       if (session != null && isLoggingIn) {
+        // Reconecta PowerSync após login bem-sucedido
+        PowerSyncService.instance.db.connect(
+          connector: SupabaseConnector(Supabase.instance.client),
+        );
         return '/home';
       }
       return null;
@@ -58,6 +68,21 @@ GoRouter appRouter(AppRouterRef ref) {
               GoRoute(
                 path: '/home',
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'calculators',
+                    builder: (context, state) => const CalculatorsHubScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return CalculatorDetailScreen(calculatorId: id);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -77,6 +102,20 @@ GoRouter appRouter(AppRouterRef ref) {
                     builder: (context, state) {
                       final guide = state.extra! as ClinicalGuide;
                       return ClinicalGuideDetailScreen(guide: guide);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'category/:categoryId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['categoryId']!;
+                      return ClinicalTopicScreen(categoryId: id);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'topic/:topicId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['topicId']!;
+                      return ClinicalGuidesByTopicScreen(topicId: id);
                     },
                   ),
                 ],

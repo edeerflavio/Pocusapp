@@ -11,6 +11,7 @@ class ClinicalGuideContent {
     required this.redFlags,
     required this.dischargeCriteria,
     required this.followUp,
+    required this.references,
   });
 
   final DiagnosisSection diagnosis;
@@ -19,6 +20,7 @@ class ClinicalGuideContent {
   final List<String> redFlags;
   final List<String> dischargeCriteria;
   final String followUp;
+  final List<GuideReference> references;
 
   static ClinicalGuideContent empty() => ClinicalGuideContent(
         diagnosis: DiagnosisSection.empty(),
@@ -27,6 +29,7 @@ class ClinicalGuideContent {
         redFlags: const [],
         dischargeCriteria: const [],
         followUp: '',
+        references: const [],
       );
 
   factory ClinicalGuideContent.fromJson(Map<String, dynamic> json) {
@@ -40,6 +43,11 @@ class ClinicalGuideContent {
       redFlags: _strings(json['red_flags']),
       dischargeCriteria: _strings(json['discharge_criteria']),
       followUp: json['follow_up'] as String? ?? '',
+      references: json['references'] == null
+          ? []
+          : (json['references'] as List)
+              .map((e) => GuideReference.fromJson(e as Map<String, dynamic>))
+              .toList(),
     );
   }
 
@@ -182,4 +190,24 @@ class TreatmentSubsection {
 
   static List<String> _str(dynamic v) =>
       v == null ? [] : List<String>.from(v as List);
+}
+
+// ---------------------------------------------------------------------------
+
+class GuideReference {
+  const GuideReference({
+    required this.citation,
+    required this.year,
+    this.url,
+  });
+
+  final String citation;
+  final String year;
+  final String? url;
+
+  factory GuideReference.fromJson(Map<String, dynamic> json) => GuideReference(
+        citation: json['citation'] as String? ?? '',
+        year: json['year'] as String? ?? '',
+        url: json['url'] as String?,
+      );
 }

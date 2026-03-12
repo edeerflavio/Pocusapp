@@ -36,6 +36,7 @@ const schema = Schema([
     Column.text('body_es'),
     Column.integer('is_premium'),
     Column.text('status'),
+    Column.text('updated_at'),
   ]),
   // Replicated: asset metadata syncs offline; binary files are downloaded
   // on demand by MediaCacheManager and stored in the app cache directory.

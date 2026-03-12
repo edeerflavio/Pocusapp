@@ -22,6 +22,7 @@ dependencies:
   freezed_annotation: ^2.4.1
   go_router: ^14.2.0
   sqlite3_flutter_libs: ^0.5.41
+  flutter_markdown: ^0.7.4
 
 dev_dependencies:
   flutter_test:

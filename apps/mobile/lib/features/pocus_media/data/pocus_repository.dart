@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:powersync/powersync.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -24,7 +25,16 @@ class PocusRepository {
           "WHERE status = 'published' "
           "ORDER BY category ASC, title_pt ASC",
         )
-        .map((rs) => rs.map(PocusItem.fromRow).toList());
+        .map((rs) {
+          debugPrint('DEBUG: Itens encontrados no SQLite (pocus_items): ${rs.length}');
+          if (rs.isNotEmpty) {
+            final first = rs.first;
+            debugPrint('DEBUG: Primeiro pocus_item — title_pt="${first['title_pt']}", '
+                'category="${first['category']}", is_premium="${first['is_premium']}", '
+                'status="${first['status']}"');
+          }
+          return rs.map(PocusItem.fromRow).toList();
+        });
   }
 
   /// Reactive stream of media assets associated with a given [pocusItemId].
