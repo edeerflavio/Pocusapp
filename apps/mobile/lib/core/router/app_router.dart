@@ -21,7 +21,7 @@ import '../../features/pocus_media/presentation/pocus_screen.dart';
 import '../../features/pocus_media/presentation/pocus_player_screen.dart';
 import '../../features/pocus_media/data/models/pocus_item.dart';
 import '../../features/account/presentation/account_screen.dart';
-import '../../simulator/ui/simulator_screen.dart';
+import '../../features/simulator/presentation/screens/simulator_screen.dart';
 import 'main_navigation.dart';
 
 part 'app_router.g.dart';

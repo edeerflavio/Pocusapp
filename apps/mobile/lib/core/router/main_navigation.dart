@@ -40,8 +40,8 @@ class MainNavigation extends StatelessWidget {
             label: 'POCUS',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.schema_outlined),
-            activeIcon: Icon(Icons.schema),
+            icon: Icon(Icons.air_outlined),
+            activeIcon: Icon(Icons.air),
             label: 'Simulador',
           ),
           BottomNavigationBarItem(
