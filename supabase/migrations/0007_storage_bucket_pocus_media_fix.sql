@@ -1,15 +1,14 @@
 -- =============================================================
--- 0002_storage_bucket.sql
--- Sets up the Supabase Storage bucket for media files and
--- grants appropriate access via RLS policies.
+-- 0007_storage_bucket_pocus_media_fix.sql
+-- Reconciles storage.objects policies for the pocus-media bucket.
+-- This removes configuration drift from manual dashboard edits.
 -- =============================================================
 
--- 1. Create the private bucket (signed URLs required for access)
-insert into storage.buckets (id, name, public)
-values ('pocus-media', 'pocus-media', false)
-on conflict (id) do nothing;
+drop policy if exists "authenticated_read_media" on storage.objects;
+drop policy if exists "admin_insert_media_objects" on storage.objects;
+drop policy if exists "admin_update_media_objects" on storage.objects;
+drop policy if exists "admin_delete_media_objects" on storage.objects;
 
--- 2. Authenticated users can READ objects (enables createSignedUrl)
 create policy "authenticated_read_media"
 on storage.objects for select
 using (
@@ -17,7 +16,6 @@ using (
   and auth.role() = 'authenticated'
 );
 
--- 3. Admins/editors can UPLOAD files
 create policy "admin_insert_media_objects"
 on storage.objects for insert
 with check (
@@ -25,7 +23,6 @@ with check (
   and public.is_admin_or_editor()
 );
 
--- 4. Admins/editors can UPDATE file metadata
 create policy "admin_update_media_objects"
 on storage.objects for update
 using (
@@ -33,7 +30,6 @@ using (
   and public.is_admin_or_editor()
 );
 
--- 5. Admins/editors can DELETE files
 create policy "admin_delete_media_objects"
 on storage.objects for delete
 using (

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
@@ -36,11 +37,26 @@ class CacheEntry {
   final DateTime lastAccessedAt;
 }
 
+abstract class MediaCacheFileSystem {
+  Future<void> deleteFile(String path);
+}
+
+class IoMediaCacheFileSystem implements MediaCacheFileSystem {
+  @override
+  Future<void> deleteFile(String path) async {
+    await File(path).delete().catchError((_) => File(path));
+  }
+}
+
 /// Manages on-disk cache for POCUS media (MP4 / images).
 class MediaCacheManager {
-  MediaCacheManager(this._db);
+  MediaCacheManager(
+    this._db, {
+    MediaCacheFileSystem? fileSystem,
+  }) : _fileSystem = fileSystem ?? IoMediaCacheFileSystem();
 
   final PowerSyncDatabase _db;
+  final MediaCacheFileSystem _fileSystem;
 
   // In-flight download futures keyed by assetId to prevent duplicate fetches.
   final Map<String, Future<String?>> _inflight = {};
@@ -89,7 +105,7 @@ class MediaCacheManager {
   Future<void> clearCache() async {
     final entries = await listCachedAssets();
     for (final e in entries) {
-      await File(e.localPath).delete().catchError((_) => File(e.localPath));
+      await _fileSystem.deleteFile(e.localPath);
     }
     await _db.execute('DELETE FROM media_cache_entries');
   }
@@ -97,7 +113,7 @@ class MediaCacheManager {
   Future<void> evict(String assetId) async {
     final row = await _fetchEntry(assetId);
     if (row != null) {
-      await File(row.localPath).delete().catchError((_) => File(row.localPath));
+      await _fileSystem.deleteFile(row.localPath);
       await _deleteEntry(assetId);
     }
   }
@@ -113,7 +129,7 @@ class MediaCacheManager {
 
     Future<void> cleanup() async {
       final f = File(localPath);
-      if (await f.exists()) await f.delete().catchError((_) => f);
+      if (await f.exists()) await _fileSystem.deleteFile(localPath);
       await _deleteEntry(assetId);
     }
 
@@ -179,17 +195,19 @@ class MediaCacheManager {
     int total = rows.fold(0, (sum, r) => sum + (r['file_size_bytes'] as int? ?? 0));
 
     for (final row in rows) {
-      if (total <= _kMaxCacheSizeBytes) break;
       final assetId = row['asset_id'] as String;
       final localPath = row['local_path'] as String;
       final size = row['file_size_bytes'] as int? ?? 0;
 
-      await File(localPath).delete().catchError((_) => File(localPath));
+      await _fileSystem.deleteFile(localPath);
       await _deleteEntry(assetId);
       total -= size;
       if (total <= _kMaxCacheSizeBytes) break;
     }
   }
+
+  @visibleForTesting
+  Future<void> evictIfNeededForTest() => _evictIfNeeded();
 
   Future<Directory> _cacheDir() async {
     final base = await getApplicationCacheDirectory();

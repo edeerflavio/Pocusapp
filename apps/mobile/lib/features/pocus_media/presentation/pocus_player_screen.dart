@@ -1,16 +1,13 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../shared/widgets/markdown_accordion.dart';
 import '../data/models/pocus_item.dart';
+import '../data/video_download_manager.dart';
 
 // ---------------------------------------------------------------------------
 // PocusPlayerScreen — Multi-window protocol detail screen.
@@ -207,113 +204,37 @@ class _WindowSections extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Inline video player — Offline-first: cache local em disco.
+// Inline video player — Offline-first via VideoDownloadManager.
 //
-// 1. Verifica se o arquivo já existe em getApplicationDocumentsDirectory()
-// 2. Se sim → VideoPlayerController.file() (100% offline)
-// 3. Se não → download via Signed URL, salva localmente, depois toca
+// Downloads are managed by a global keepAlive ChangeNotifier, so they survive
+// widget disposal. The widget just observes the download state and initializes
+// the VideoPlayerController when the file is ready.
 // ---------------------------------------------------------------------------
 
-/// Derives a deterministic cache filename from a storage path.
-/// E.g. "E-Fast/teste1.mp4" → "a1b2c3d4e5.mp4"
-String _cacheFileName(String storagePath) {
-  final hash = md5.convert(utf8.encode(storagePath)).toString();
-  final ext = p.extension(storagePath).isNotEmpty ? p.extension(storagePath) : '.mp4';
-  return '$hash$ext';
-}
-
-class _InlineVideoPlayer extends StatefulWidget {
+class _InlineVideoPlayer extends ConsumerStatefulWidget {
   const _InlineVideoPlayer({required this.storagePath});
   final String storagePath;
 
   @override
-  State<_InlineVideoPlayer> createState() => _InlineVideoPlayerState();
+  ConsumerState<_InlineVideoPlayer> createState() => _InlineVideoPlayerState();
 }
 
-class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
+class _InlineVideoPlayerState extends ConsumerState<_InlineVideoPlayer> {
   VideoPlayerController? _controller;
-  bool _loading = true;
-  double _downloadProgress = 0;
-  String? _error;
+  bool _playerInitStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _resolve();
+    // Fire-and-forget: the manager deduplicates and survives widget disposal.
+    ref.read(videoDownloadManagerProvider).ensureDownloaded(widget.storagePath);
   }
 
-  Future<void> _resolve() async {
-    try {
-      final localFile = await _localFile();
+  Future<void> _initPlayer(String path) async {
+    if (_playerInitStarted) return;
+    _playerInitStarted = true;
 
-      // 1. Cache hit — play from disk immediately
-      if (await localFile.exists() && await localFile.length() > 0) {
-        await _initPlayer(localFile);
-        return;
-      }
-
-      // 2. Cache miss — download then play
-      await _downloadAndCache(localFile);
-    } catch (e) {
-      if (mounted) setState(() { _error = 'Falha ao carregar vídeo'; _loading = false; });
-    }
-  }
-
-  Future<File> _localFile() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final cacheDir = Directory(p.join(docsDir.path, 'pocus_video_cache'));
-    if (!await cacheDir.exists()) await cacheDir.create(recursive: true);
-    return File(p.join(cacheDir.path, _cacheFileName(widget.storagePath)));
-  }
-
-  Future<void> _downloadAndCache(File localFile) async {
-    // Get signed URL
-    final signedUrl = await Supabase.instance.client.storage
-        .from('pocus-media')
-        .createSignedUrl(widget.storagePath, 300)
-        .timeout(const Duration(seconds: 10));
-
-    // Stream download to disk (avoids loading entire file into memory)
-    final httpClient = HttpClient();
-    try {
-      final request = await httpClient.getUrl(Uri.parse(signedUrl));
-      final response = await request.close().timeout(const Duration(seconds: 120));
-
-      if (response.statusCode != 200) {
-        if (mounted) setState(() { _error = 'Erro HTTP ${response.statusCode}'; _loading = false; });
-        return;
-      }
-
-      final contentLength = response.contentLength;
-      final sink = localFile.openWrite();
-      int received = 0;
-
-      await for (final chunk in response) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (contentLength > 0 && mounted) {
-          setState(() => _downloadProgress = received / contentLength);
-        }
-      }
-
-      await sink.flush();
-      await sink.close();
-
-      // Validate downloaded file
-      if (await localFile.length() == 0) {
-        await localFile.delete().catchError((_) => localFile);
-        if (mounted) setState(() { _error = 'Download vazio'; _loading = false; });
-        return;
-      }
-
-      await _initPlayer(localFile);
-    } finally {
-      httpClient.close();
-    }
-  }
-
-  Future<void> _initPlayer(File file) async {
-    final controller = VideoPlayerController.file(file);
+    final controller = VideoPlayerController.file(File(path));
     await controller.initialize();
 
     if (!mounted) {
@@ -323,7 +244,7 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
 
     controller.setLooping(true);
     controller.setVolume(0.0);
-    setState(() { _controller = controller; _loading = false; });
+    setState(() => _controller = controller);
   }
 
   @override
@@ -334,74 +255,88 @@ class _InlineVideoPlayerState extends State<_InlineVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // Error state
-    if (_error != null) {
-      return _VideoPlaceholder(message: _error!);
+    final task = ref.watch(
+      videoDownloadManagerProvider
+          .select((m) => m.taskFor(widget.storagePath)),
+    );
+
+    // Completed — initialize player if not already done.
+    if (task.status == DownloadStatus.completed && task.localPath != null) {
+      _initPlayer(task.localPath!);
     }
 
-    // Loading / downloading state
-    if (_loading) {
-      return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D1B2A),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: _downloadProgress > 0
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: CircularProgressIndicator(
-                          value: _downloadProgress,
-                          color: Colors.white54,
-                          strokeWidth: 3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${(_downloadProgress * 100).toInt()}%',
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
-                      ),
-                    ],
-                  )
-                : const CircularProgressIndicator(color: Colors.white54),
+    // Error state
+    if (task.status == DownloadStatus.error) {
+      return _VideoPlaceholder(message: task.error ?? 'Erro');
+    }
+
+    // Player ready — tap to play/pause
+    if (_controller != null) {
+      return GestureDetector(
+        onTap: () {
+          final c = _controller;
+          if (c == null) return;
+          setState(() {
+            c.value.isPlaying ? c.pause() : c.play();
+          });
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: AspectRatio(
+            aspectRatio: _controller?.value.aspectRatio ?? 16 / 9,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(_controller!),
+                if (!_controller!.value.isPlaying)
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                        Icons.play_arrow, size: 36, color: Colors.white),
+                  ),
+              ],
+            ),
           ),
         ),
       );
     }
 
-    // Player ready — tap to play/pause
-    return GestureDetector(
-      onTap: () {
-        final c = _controller;
-        if (c == null) return;
-        setState(() { c.value.isPlaying ? c.pause() : c.play(); });
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: AspectRatio(
-          aspectRatio: _controller?.value.aspectRatio ?? 16 / 9,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (_controller != null) VideoPlayer(_controller!),
-              if (_controller != null && !_controller!.value.isPlaying)
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.play_arrow, size: 36, color: Colors.white),
-                ),
-            ],
-          ),
+    // Loading / downloading state
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1B2A),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: task.progress > 0
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(
+                        value: task.progress,
+                        color: Colors.white54,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(task.progress * 100).toInt()}%',
+                      style: const TextStyle(
+                          color: Colors.white38, fontSize: 11),
+                    ),
+                  ],
+                )
+              : const CircularProgressIndicator(color: Colors.white54),
         ),
       ),
     );
