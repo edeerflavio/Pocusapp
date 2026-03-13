@@ -69,7 +69,7 @@ class PocusRepository {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 PocusRepository pocusRepository(PocusRepositoryRef ref) {
   final db = ref.watch(powerSyncDatabaseProvider);
   final cache = ref.watch(mediaCacheManagerProvider);

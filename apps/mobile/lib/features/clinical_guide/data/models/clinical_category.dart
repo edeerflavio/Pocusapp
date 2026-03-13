@@ -54,14 +54,16 @@ final class ClinicalTopic {
   final List<String> tagKeywords;
 
   /// Returns true when [guide] belongs to this topic.
+  ///
+  /// Matching rules (strict — no full-text search on content_json/body):
+  /// - **specialty**: exact case-insensitive match against [specialtyKeywords].
+  /// - **tags**: exact case-insensitive match of any tag against [tagKeywords].
   bool matchesGuide(ClinicalGuide guide) {
-    final specLower = guide.specialty.toLowerCase();
-    if (specialtyKeywords.any((k) => specLower.contains(k))) return true;
+    final specLower = guide.specialty.toLowerCase().trim();
+    if (specialtyKeywords.any((k) => specLower == k)) return true;
 
-    final tagsLower = guide.tags.map((t) => t.toLowerCase()).toList();
-    if (tagKeywords.any((k) => tagsLower.any((t) => t.contains(k)))) {
-      return true;
-    }
+    final tagsLower = guide.tags.map((t) => t.toLowerCase().trim()).toSet();
+    if (tagKeywords.any((k) => tagsLower.contains(k))) return true;
 
     return false;
   }

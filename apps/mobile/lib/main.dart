@@ -93,9 +93,9 @@ class MainApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'Pocus 2.0',
-      theme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+      title: 'AMPLE',
+      theme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }

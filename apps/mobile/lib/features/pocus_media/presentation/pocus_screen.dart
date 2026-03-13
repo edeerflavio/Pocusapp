@@ -95,13 +95,28 @@ class PocusScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'POCUS',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.asset(
+                    'assets/images/logo_ample.png',
+                    height: 26,
+                    width: 26,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'POCUS',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF004D40),
+                  ),
+                ),
+              ],
             ),
             Text(
               'Selecione um protocolo',
@@ -143,19 +158,19 @@ Color _colorForCategory(String category) {
   switch (category.toLowerCase()) {
     case 'cardiaco':
     case 'cardíaco':
-      return const Color(0xFFE53935);
+      return const Color(0xFFFF6F61);
     case 'pulmonar':
-      return const Color(0xFF1565C0);
+      return const Color(0xFF004D40);
     case 'fast':
-      return const Color(0xFFE65100);
+      return const Color(0xFF00897B);
     case 'rush':
-      return const Color(0xFF6A1B9A);
+      return const Color(0xFF26A69A);
     case 'casa':
-      return const Color(0xFF00695C);
+      return const Color(0xFF00796B);
     case 'dtc':
-      return const Color(0xFF37474F);
+      return const Color(0xFF004D40);
     default:
-      return const Color(0xFF455A64);
+      return const Color(0xFF00695C);
   }
 }
 
@@ -220,7 +235,7 @@ class _ProtocolCard extends StatelessWidget {
               if (item.isPremium)
                 const Padding(
                   padding: EdgeInsets.only(right: 4),
-                  child: Icon(Icons.star, color: Color(0xFFF9A825), size: 16),
+                  child: Icon(Icons.star, color: Color(0xFFFF6F61), size: 16),
                 ),
               Icon(Icons.chevron_right, color: Colors.grey[400]),
             ],

@@ -54,7 +54,7 @@ const _rapDefinition = CalculatorDefinition(
       'Estima a pressão atrial direita a partir do diâmetro da VCI e do '
       'percentual de colapso inspiratório.',
   icon: Icons.waves_outlined,
-  accentColor: Color(0xFF1565C0),
+  accentColor: Color(0xFF004D40),
   fields: [
     FieldDefinition(
       id: 'vci_diameter_cm',

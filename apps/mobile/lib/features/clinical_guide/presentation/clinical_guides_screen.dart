@@ -125,7 +125,7 @@ class _ClinicalGuidesScreenState extends ConsumerState<ClinicalGuidesScreen> {
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Color(0xFF004D40),
         ),
       ),
       bottom: PreferredSize(
@@ -297,12 +297,12 @@ class _SearchResultItem extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1565C0).withValues(alpha: 0.08),
+                  color: const Color(0xFF004D40).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.article_outlined,
-                  color: Color(0xFF1565C0),
+                  color: Color(0xFF004D40),
                   size: 22,
                 ),
               ),

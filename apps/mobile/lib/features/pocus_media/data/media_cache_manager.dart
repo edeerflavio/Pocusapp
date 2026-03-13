@@ -89,7 +89,7 @@ class MediaCacheManager {
   Future<void> clearCache() async {
     final entries = await listCachedAssets();
     for (final e in entries) {
-      await File(e.localPath).delete().catchError((_) {});
+      await File(e.localPath).delete().catchError((_) => File(e.localPath));
     }
     await _db.execute('DELETE FROM media_cache_entries');
   }
@@ -97,7 +97,7 @@ class MediaCacheManager {
   Future<void> evict(String assetId) async {
     final row = await _fetchEntry(assetId);
     if (row != null) {
-      await File(row.localPath).delete().catchError((_) {});
+      await File(row.localPath).delete().catchError((_) => File(row.localPath));
       await _deleteEntry(assetId);
     }
   }
@@ -113,7 +113,7 @@ class MediaCacheManager {
 
     Future<void> cleanup() async {
       final f = File(localPath);
-      if (await f.exists()) await f.delete().catchError((_) {});
+      if (await f.exists()) await f.delete().catchError((_) => f);
       await _deleteEntry(assetId);
     }
 
@@ -184,9 +184,10 @@ class MediaCacheManager {
       final localPath = row['local_path'] as String;
       final size = row['file_size_bytes'] as int? ?? 0;
 
-      await File(localPath).delete().catchError((_) {});
+      await File(localPath).delete().catchError((_) => File(localPath));
       await _deleteEntry(assetId);
       total -= size;
+      if (total <= _kMaxCacheSizeBytes) break;
     }
   }
 
@@ -240,7 +241,7 @@ class MediaCacheManager {
       );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 MediaCacheManager mediaCacheManager(MediaCacheManagerRef ref) {
   final db = ref.watch(powerSyncDatabaseProvider);
   return MediaCacheManager(db);

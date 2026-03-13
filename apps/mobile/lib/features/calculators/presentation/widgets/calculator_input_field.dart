@@ -75,7 +75,7 @@ class _CalculatorInputFieldState extends State<CalculatorInputField> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF1565C0), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF004D40), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

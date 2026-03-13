@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import '../../../shared/widgets/markdown_accordion.dart';
 import '../data/clinical_catalog.dart';
 import '../data/models/clinical_category.dart';
 import '../data/models/clinical_guide.dart';
@@ -16,9 +17,9 @@ import 'utils/guide_markdown_converter.dart';
 /// Architecture:
 /// - Content is received from PowerSync (offline-first, no network latency).
 /// - [GuideMarkdownConverter] converts the structured JSON content to a
-///   Markdown string sectioned by `##` headers.
-/// - [_parseMarkdownSections] splits the string into [_GuideSection] objects.
-/// - Each section is rendered as an [_AccordionCard] (ExpansionTile).
+///   Markdown string sectioned by `### ` headers.
+/// - [parseMarkdownBody] (shared) splits the string into [ParsedSection]s.
+/// - Each section is rendered as a [MarkdownSectionCard] (shared accordion).
 /// - ⚠️ sections receive a red left border as a critical visual alert.
 /// - Internal search auto-expands sections containing the query.
 class ClinicalGuideDetailScreen extends StatefulWidget {
@@ -33,8 +34,8 @@ class ClinicalGuideDetailScreen extends StatefulWidget {
 
 class _ClinicalGuideDetailScreenState
     extends State<ClinicalGuideDetailScreen> {
-  late final List<_GuideSection> _sections;
-  late final String _markdown;
+  late final List<ParsedSection> _sections;
+  late final String _intro;
 
   final _searchCtrl = TextEditingController();
   String _query = '';
@@ -51,8 +52,10 @@ class _ClinicalGuideDetailScreenState
     super.initState();
 
     // Convert structured content → Markdown → sections (pure, synchronous).
-    _markdown = GuideMarkdownConverter.convert(widget.guide.content);
-    _sections = _parseMarkdownSections(_markdown);
+    final markdown = GuideMarkdownConverter.convert(widget.guide.content);
+    final parsed = parseMarkdownBody(markdown);
+    _intro = parsed.intro;
+    _sections = parsed.sections;
     _expandedIndices = {if (_sections.isNotEmpty) 0};
 
     // Resolve breadcrumb from static catalog.
@@ -79,10 +82,8 @@ class _ClinicalGuideDetailScreenState
     setState(() {
       _query = q;
       if (q.isEmpty) {
-        // Restore default state: only first section expanded.
         _expandedIndices = {if (_sections.isNotEmpty) 0};
       } else {
-        // Auto-expand every section that matches the query.
         _expandedIndices = {
           for (var i = 0; i < _sections.length; i++)
             if (_sections[i].matchesQuery(q)) i,
@@ -136,28 +137,43 @@ class _ClinicalGuideDetailScreenState
               ),
             )
           else ...[
-            // ── Accordion sections ────────────────────────────────────────
+            // ── Intro (if any) ─────────────────────────────────────────────
+            if (_intro.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: MarkdownBody(
+                    data: _intro,
+                    selectable: true,
+                    softLineBreak: true,
+                    styleSheet: sharedMarkdownStyle(),
+                  ),
+                ),
+              ),
+            // ── Accordion sections (shared widget) ─────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               sliver: SliverList.builder(
                 itemCount: _sections.length,
-                itemBuilder: (_, i) => _AccordionCard(
-                  // ValueKey changes when expansion state changes → forces
-                  // rebuild with updated initiallyExpanded, enabling the
-                  // search-driven expand/collapse without ExpansionTileController.
-                  key: ValueKey('section_${i}_${_expandedIndices.contains(i)}'),
-                  section: _sections[i],
-                  initiallyExpanded: _expandedIndices.contains(i),
-                  hasSearchMatch: _query.isNotEmpty && _sections[i].matchesQuery(_query),
-                  onExpansionChanged: (expanded) {
-                    setState(() {
-                      if (expanded) {
-                        _expandedIndices.add(i);
-                      } else {
-                        _expandedIndices.remove(i);
-                      }
-                    });
-                  },
+                itemBuilder: (_, i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: MarkdownSectionCard(
+                    key: ValueKey('section_${i}_${_expandedIndices.contains(i)}'),
+                    section: _sections[i],
+                    index: i,
+                    initiallyExpanded: _expandedIndices.contains(i),
+                    hasSearchMatch:
+                        _query.isNotEmpty && _sections[i].matchesQuery(_query),
+                    onExpansionChanged: (expanded) {
+                      setState(() {
+                        if (expanded) {
+                          _expandedIndices.add(i);
+                        } else {
+                          _expandedIndices.remove(i);
+                        }
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -203,57 +219,6 @@ class _ClinicalGuideDetailScreenState
       ],
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// _GuideSection — parsed accordion unit
-// ---------------------------------------------------------------------------
-
-final class _GuideSection {
-  const _GuideSection({required this.rawTitle, required this.body});
-
-  /// Title as written in the Markdown (e.g. "🩺 Diagnóstico").
-  final String rawTitle;
-
-  /// Body Markdown content (everything between this `##` and the next).
-  final String body;
-
-  /// Sections containing ⚠️ or clinical risk keywords trigger a red border.
-  bool get isCritical =>
-      rawTitle.contains('⚠️') ||
-      rawTitle.toLowerCase().contains('contraindicaç') ||
-      rawTitle.toLowerCase().contains('red flag') ||
-      rawTitle.toLowerCase().contains('alarme');
-
-  bool matchesQuery(String q) =>
-      rawTitle.toLowerCase().contains(q) ||
-      body.toLowerCase().contains(q);
-}
-
-// ---------------------------------------------------------------------------
-// Markdown → sections parser
-// ---------------------------------------------------------------------------
-
-List<_GuideSection> _parseMarkdownSections(String markdown) {
-  if (markdown.trim().isEmpty) return const [];
-
-  final sections = <_GuideSection>[];
-  final headerRegex = RegExp(r'^## (.+)$', multiLine: true);
-  final matches = headerRegex.allMatches(markdown).toList();
-
-  for (var i = 0; i < matches.length; i++) {
-    final title = matches[i].group(1)!.trim();
-    final bodyStart = matches[i].end;
-    final bodyEnd =
-        i + 1 < matches.length ? matches[i + 1].start : markdown.length;
-    final body = markdown.substring(bodyStart, bodyEnd).trim();
-
-    if (title.isNotEmpty) {
-      sections.add(_GuideSection(rawTitle: title, body: body));
-    }
-  }
-
-  return sections;
 }
 
 // ---------------------------------------------------------------------------
@@ -305,10 +270,10 @@ class _HeaderCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFE3F2FD),
+                color: const Color(0xFFE0F2F1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color(0xFF1565C0).withValues(alpha: 0.18),
+                  color: const Color(0xFF004D40).withValues(alpha: 0.18),
                 ),
               ),
               child: Text(
@@ -455,7 +420,7 @@ class _InternalSearchBar extends StatelessWidget {
                   : '$matchCount ${matchCount == 1 ? "seção expandida" : "seções expandidas"} com "$query"',
               style: TextStyle(
                 fontSize: 12,
-                color: matchCount == 0 ? Colors.grey[400] : const Color(0xFF1565C0),
+                color: matchCount == 0 ? Colors.grey[400] : const Color(0xFF004D40),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -464,187 +429,6 @@ class _InternalSearchBar extends StatelessWidget {
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// _AccordionCard — single expandable section
-// ---------------------------------------------------------------------------
-
-class _AccordionCard extends StatelessWidget {
-  const _AccordionCard({
-    super.key,
-    required this.section,
-    required this.initiallyExpanded,
-    required this.hasSearchMatch,
-    required this.onExpansionChanged,
-  });
-
-  final _GuideSection section;
-  final bool initiallyExpanded;
-  final bool hasSearchMatch;
-  final ValueChanged<bool> onExpansionChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final isCritical = section.isCritical;
-
-    final card = Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: _buildExpansionTile(context, isCritical),
-    );
-
-    // Critical sections: red left border via IntrinsicHeight Row.
-    if (isCritical) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(width: 4, color: const Color(0xFFE53935)),
-                Expanded(child: card),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: card,
-    );
-  }
-
-  Widget _buildExpansionTile(BuildContext context, bool isCritical) {
-    return ExpansionTile(
-      initiallyExpanded: initiallyExpanded,
-      onExpansionChanged: onExpansionChanged,
-      backgroundColor: Colors.white,
-      collapsedBackgroundColor: Colors.white,
-      iconColor: Colors.grey[600],
-      collapsedIconColor: Colors.grey[400],
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      childrenPadding: EdgeInsets.zero,
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              section.rawTitle,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: isCritical
-                    ? const Color(0xFFE53935)
-                    : Colors.black87,
-                height: 1.3,
-              ),
-            ),
-          ),
-          // Blue dot indicator when a search match is found.
-          if (hasSearchMatch)
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: const BoxDecoration(
-                color: Color(0xFF1565C0),
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
-      ),
-      children: [
-        const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: MarkdownBody(
-            data: section.body,
-            softLineBreak: true,
-            selectable: true,
-            styleSheet: _buildStyleSheet(context),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Markdown style sheet
-// ---------------------------------------------------------------------------
-
-MarkdownStyleSheet _buildStyleSheet(BuildContext context) {
-  return MarkdownStyleSheet(
-    p: const TextStyle(
-      fontSize: 13.5,
-      height: 1.6,
-      color: Colors.black87,
-    ),
-    h3: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w700,
-      color: Color(0xFF424242),
-      height: 1.8,
-    ),
-    h4: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: Color(0xFF546E7A),
-    ),
-    strong: const TextStyle(
-      fontWeight: FontWeight.w700,
-      color: Colors.black87,
-    ),
-    listBullet: const TextStyle(
-      fontSize: 13.5,
-      height: 1.6,
-      color: Colors.black87,
-    ),
-    listIndent: 16,
-    blockquote: const TextStyle(
-      fontSize: 13,
-      color: Color(0xFF37474F),
-      height: 1.5,
-    ),
-    blockquoteDecoration: BoxDecoration(
-      color: const Color(0xFFFFF8E1),
-      borderRadius: BorderRadius.circular(6),
-      border: const Border(
-        left: BorderSide(color: Color(0xFFFFA000), width: 3),
-      ),
-    ),
-    blockquotePadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    code: const TextStyle(
-      fontSize: 12.5,
-      backgroundColor: Color(0xFFF5F5F5),
-      fontFamily: 'monospace',
-      color: Color(0xFF6A1B9A),
-    ),
-    codeblockDecoration: BoxDecoration(
-      color: const Color(0xFFF5F5F5),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    horizontalRuleDecoration: BoxDecoration(
-      border: Border(
-        top: BorderSide(color: Colors.grey[200]!, width: 1),
-      ),
-    ),
-  );
 }
 
 // ---------------------------------------------------------------------------

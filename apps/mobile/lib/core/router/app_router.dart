@@ -8,6 +8,9 @@ import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/calculators/presentation/calculator_detail_screen.dart';
 import '../../features/calculators/presentation/calculators_hub_screen.dart';
+import '../../features/drugs/data/models/drug.dart';
+import '../../features/drugs/presentation/drug_detail_screen.dart';
+import '../../features/drugs/presentation/drugs_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/clinical_guide/presentation/clinical_guides_screen.dart';
 import '../../features/clinical_guide/presentation/clinical_guide_detail_screen.dart';
@@ -78,6 +81,23 @@ GoRouter appRouter(AppRouterRef ref) {
                         builder: (context, state) {
                           final id = state.pathParameters['id']!;
                           return CalculatorDetailScreen(calculatorId: id);
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'drugs',
+                    builder: (context, state) => const DrugsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'detail/:slug',
+                        redirect: (context, state) {
+                          if (state.extra is! Drug) return '/home/drugs';
+                          return null;
+                        },
+                        builder: (context, state) {
+                          final drug = state.extra! as Drug;
+                          return DrugDetailScreen(drug: drug);
                         },
                       ),
                     ],

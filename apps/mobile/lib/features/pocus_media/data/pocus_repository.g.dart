@@ -6,11 +6,11 @@ part of 'pocus_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$pocusRepositoryHash() => r'779491f7866b774bcb1fb29ab41a979942e42d62';
+String _$pocusRepositoryHash() => r'b2ea40536f1cea3a104ab7f80ce4c775bbc2e77c';
 
 /// See also [pocusRepository].
 @ProviderFor(pocusRepository)
-final pocusRepositoryProvider = AutoDisposeProvider<PocusRepository>.internal(
+final pocusRepositoryProvider = Provider<PocusRepository>.internal(
   pocusRepository,
   name: r'pocusRepositoryProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -20,7 +20,7 @@ final pocusRepositoryProvider = AutoDisposeProvider<PocusRepository>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef PocusRepositoryRef = AutoDisposeProviderRef<PocusRepository>;
+typedef PocusRepositoryRef = ProviderRef<PocusRepository>;
 String _$watchPocusItemsHash() => r'a608ef9868a6652904030f5fd6a257c0735854fd';
 
 /// See also [watchPocusItems].

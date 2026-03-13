@@ -92,7 +92,7 @@ class GuideCard extends StatelessWidget {
 
 const _scenarioMeta = {
   'emergencia': (label: 'Emergência', color: Color(0xFFC62828)),
-  'enfermaria': (label: 'Enfermaria', color: Color(0xFF1565C0)),
+  'enfermaria': (label: 'Enfermaria', color: Color(0xFF004D40)),
   'ubs': (label: 'UBS / APS', color: Color(0xFF2E7D32)),
   'geral': (label: 'Geral', color: Color(0xFF546E7A)),
 };

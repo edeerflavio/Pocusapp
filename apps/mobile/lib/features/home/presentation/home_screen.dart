@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(context),
@@ -37,24 +38,40 @@ class HomeScreen extends StatelessWidget {
       expandedHeight: 140,
       floating: false,
       pinned: true,
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.white,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 72),
-        title: const Text(
-          'PocusApp',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/logo_ample.png',
+                height: 32,
+                width: 32,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'AMPLE',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: AppTheme.deepTeal,
+              ),
+            ),
+          ],
         ),
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF1A1A2E), Color(0xFF121212)],
+              colors: [Color(0xFFE0F2F1), Colors.white],
             ),
           ),
         ),
@@ -72,8 +89,9 @@ class HomeScreen extends StatelessWidget {
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: const Color(0xFFF0F4F8),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
               ),
               child: Row(
                 children: [
@@ -122,27 +140,34 @@ const List<_CategoryData> _categories = [
     title: 'POCUS',
     subtitle: 'Ultrassom\nPoint-of-Care',
     icon: Icons.monitor_heart_outlined,
-    gradientColors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+    gradientColors: [Color(0xFF004D40), Color(0xFF00352C)],
     route: '/pocus',
   ),
   _CategoryData(
     title: 'Via Aérea',
     subtitle: 'Intubação\ne Drogas',
     icon: Icons.air_outlined,
-    gradientColors: [Color(0xFF00695C), Color(0xFF004D40)],
+    gradientColors: [Color(0xFF00796B), Color(0xFF004D40)],
   ),
   _CategoryData(
     title: 'Calculadoras',
     subtitle: 'Débito Cardíaco\nVolume Sistólico',
     icon: Icons.calculate_outlined,
-    gradientColors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+    gradientColors: [Color(0xFFFF6F61), Color(0xFFE65550)],
     route: '/home/calculators',
   ),
   _CategoryData(
     title: 'Emergências',
     subtitle: 'IAM, Choque\ne Protocolos',
     icon: Icons.local_hospital_outlined,
-    gradientColors: [Color(0xFFC62828), Color(0xFFB71C1C)],
+    gradientColors: [Color(0xFF26A69A), Color(0xFF00897B)],
+  ),
+  _CategoryData(
+    title: 'Medicamentos',
+    subtitle: 'Farmacologia\ne Posologia',
+    icon: Icons.medication_outlined,
+    gradientColors: [Color(0xFF00897B), Color(0xFF00695C)],
+    route: '/home/drugs',
   ),
 ];
 
@@ -179,7 +204,7 @@ class _CategoryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: category.gradientColors.last.withValues(alpha: 0.45),
+              color: category.gradientColors.last.withValues(alpha: 0.35),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
