@@ -11,13 +11,13 @@ import '../../application/providers/ventilator_params_provider.dart';
 // Theme constants
 // ═══════════════════════════════════════════════════════════════════════════
 
-const _panelBg = Color(0xFF0C1018);
-const _borderColor = Color(0x1A00FF88);
-const _green = Color(0xFF00FF88);
-const _cyan = Color(0xFF00CCFF);
-const _amber = Color(0xFFFFAA00);
-const _red = Color(0xFFFF4466);
-const _dimWhite = Color(0x80FFFFFF);
+const _panelBg = Color(0xFF1A2230);
+const _borderColor = Color(0x14FFFFFF);
+const _green = Color(0xFF10B981);
+const _cyan = Color(0xFF38BDF8);
+const _amber = Color(0xFFF59E0B);
+const _red = Color(0xFFFF6B6B);
+const _dimWhite = Color(0x8CFFFFFF);
 
 /// Right monitoring panel — Ventilatory Mechanics + Last ABG.
 class RightPanel extends ConsumerWidget {
@@ -140,7 +140,7 @@ class _AbgSection extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _dimWhite,
-                fontSize: 9,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -160,7 +160,7 @@ class _AbgSection extends ConsumerWidget {
               analysis.primaryDisorder,
               style: const TextStyle(
                 color: _cyan,
-                fontSize: 8,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
                 height: 1.2,
@@ -232,11 +232,11 @@ class _AbgSection extends ConsumerWidget {
               // Switch to left panel Gaso tab — find the DefaultTabController.
               // This is a simple approach; the user can also tap the tab directly.
             },
-            icon: const Icon(Icons.add_rounded, size: 12),
+            icon: const Icon(Icons.add_rounded, size: 14),
             label: const Text(
               'NOVA GASOMETRIA',
               style: TextStyle(
-                fontSize: 8,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
@@ -269,7 +269,7 @@ class _SectionHeader extends StatelessWidget {
       text,
       style: const TextStyle(
         color: _dimWhite,
-        fontSize: 8,
+        fontSize: 12,
         fontWeight: FontWeight.w700,
         fontFamily: 'monospace',
         letterSpacing: 1.2,
@@ -328,7 +328,7 @@ class _MetricTile extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: _dimWhite,
-                  fontSize: 8,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -338,7 +338,7 @@ class _MetricTile extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
                 fontFamily: 'monospace',
               ),
@@ -351,7 +351,7 @@ class _MetricTile extends StatelessWidget {
                 unit,
                 style: TextStyle(
                   color: color.withValues(alpha: 0.4),
-                  fontSize: 7,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -361,7 +361,7 @@ class _MetricTile extends StatelessWidget {
               target,
               style: TextStyle(
                 color: color.withValues(alpha: 0.3),
-                fontSize: 6,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),

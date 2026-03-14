@@ -105,7 +105,7 @@ class WaveformDisplay extends ConsumerWidget {
                   label,
                   style: TextStyle(
                     color: color,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'monospace',
                   ),
@@ -117,7 +117,7 @@ class WaveformDisplay extends ConsumerWidget {
                   unit,
                   style: TextStyle(
                     color: color.withValues(alpha: 0.4),
-                    fontSize: 8,
+                    fontSize: 12,
                     fontFamily: 'monospace',
                   ),
                 ),

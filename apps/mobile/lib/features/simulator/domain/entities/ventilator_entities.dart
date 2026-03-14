@@ -28,6 +28,11 @@ class VentParams {
     this.fio2 = 40,
     this.ieRatio = 2.0,
     this.patientEffort = 0.0,
+    this.pHigh = 28.0,
+    this.pLow = 0.0,
+    this.tHigh = 4.5,
+    this.tLow = 0.6,
+    this.spontaneousRR = 0,
   });
 
   /// Factory with sensible defaults for a normal adult lung.
@@ -106,6 +111,27 @@ class VentParams {
   /// The engine subtracts this from alveolar pressure to drive flow.
   final double patientEffort;
 
+  // ── APRV-specific parameters ──────────────────────────────────────────
+
+  /// High pressure level in APRV mode (cmH₂O). Range: 15–40.
+  /// Maintained for most of the cycle (T-high phase).
+  final double pHigh;
+
+  /// Low pressure level in APRV mode (cmH₂O). Range: 0–10.
+  /// Brief release phase for CO₂ clearance (T-low phase).
+  final double pLow;
+
+  /// Duration of the high-pressure phase in APRV (seconds). Range: 2–8.
+  final double tHigh;
+
+  /// Duration of the release (low-pressure) phase in APRV (seconds).
+  /// Range: 0.2–1.5. Typically 0.5–0.8 s.
+  final double tLow;
+
+  /// Spontaneous respiratory rate overlay in APRV (breaths/min).
+  /// Range: 0–30. Represents small tidal breaths during P-high phase.
+  final int spontaneousRR;
+
   // ── Derived values ─────────────────────────────────────────────────────
 
   /// RC time constant τ = R × C (seconds).
@@ -115,16 +141,20 @@ class VentParams {
   /// and/or high C) requires longer expiratory time to avoid air trapping.
   double get tau => resistance * compliance / 1000.0;
 
-  /// Total respiratory cycle time (seconds) = 60 / RR.
-  double get totalCycleTime => 60.0 / rr;
+  /// Total respiratory cycle time (seconds).
+  /// APRV: T-high + T-low. Others: 60 / RR.
+  double get totalCycleTime =>
+      mode == VentMode.aprv ? tHigh + tLow : 60.0 / rr;
 
-  /// Inspiratory time (seconds) based on I:E ratio.
-  ///
-  /// For ratio 1:X → Ti = Ttotal / (1 + X).
-  double get inspTime => totalCycleTime / (1.0 + ieRatio);
+  /// Inspiratory time (seconds).
+  /// APRV: T-high phase. Others: Ttotal / (1 + I:E).
+  double get inspTime =>
+      mode == VentMode.aprv ? tHigh : totalCycleTime / (1.0 + ieRatio);
 
-  /// Expiratory time (seconds) = Ttotal − Ti.
-  double get expTime => totalCycleTime - inspTime;
+  /// Expiratory time (seconds).
+  /// APRV: T-low (release) phase. Others: Ttotal − Ti.
+  double get expTime =>
+      mode == VentMode.aprv ? tLow : totalCycleTime - inspTime;
 
   VentParams copyWith({
     VentMode? mode,
@@ -138,6 +168,11 @@ class VentParams {
     int? fio2,
     double? ieRatio,
     double? patientEffort,
+    double? pHigh,
+    double? pLow,
+    double? tHigh,
+    double? tLow,
+    int? spontaneousRR,
   }) =>
       VentParams(
         mode: mode ?? this.mode,
@@ -151,6 +186,11 @@ class VentParams {
         fio2: fio2 ?? this.fio2,
         ieRatio: ieRatio ?? this.ieRatio,
         patientEffort: patientEffort ?? this.patientEffort,
+        pHigh: pHigh ?? this.pHigh,
+        pLow: pLow ?? this.pLow,
+        tHigh: tHigh ?? this.tHigh,
+        tLow: tLow ?? this.tLow,
+        spontaneousRR: spontaneousRR ?? this.spontaneousRR,
       );
 }
 
@@ -642,16 +682,22 @@ class SimulationState {
     required this.metrics,
   });
 
-  /// Factory for the initial (blank-screen) state before the simulation
-  /// has produced any samples.
-  factory SimulationState.initial() => const SimulationState(
-        pressureData: [],
-        flowData: [],
-        volumeData: [],
-        currentIndex: 0,
-        phase: BreathPhase.expiration,
-        metrics: CycleMetrics(pip: 0, peep: 0, vte: 0, rr: 0),
-      );
+  /// Factory for the initial (blank-screen) state.
+  ///
+  /// Fills pressure with [peep] (baseline), flow and volume with 0.
+  /// This ensures the waveform painters always have a full buffer to
+  /// draw (avoids a blank canvas flash on reset).
+  factory SimulationState.initial({double peep = 5.0}) {
+    final bufSize = EngineConstants.bufferSize;
+    return SimulationState(
+      pressureData: List<double>.filled(bufSize, peep),
+      flowData: List<double>.filled(bufSize, 0),
+      volumeData: List<double>.filled(bufSize, 0),
+      currentIndex: 0,
+      phase: BreathPhase.expiration,
+      metrics: const CycleMetrics(pip: 0, peep: 0, vte: 0, rr: 0),
+    );
+  }
 
   /// Rolling pressure waveform (cmH₂O).
   ///

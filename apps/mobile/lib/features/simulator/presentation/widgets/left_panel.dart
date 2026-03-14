@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers/abg_provider.dart';
 import '../../application/providers/pathophysiology_provider.dart';
 import '../../application/providers/patient_provider.dart';
+import '../../application/providers/simulation_provider.dart';
 import '../../application/providers/ventilator_params_provider.dart';
 import '../../data/presets/clinical_presets.dart';
 import '../../domain/entities/ventilator_entities.dart';
@@ -16,21 +17,21 @@ import 'scenario_panel.dart';
 // Theme constants
 // ═══════════════════════════════════════════════════════════════════════════
 
-const _panelBg = Color(0xFF0C1018);
-const _borderColor = Color(0x1A00FF88);
-const _green = Color(0xFF00FF88);
-const _cyan = Color(0xFF00CCFF);
-const _amber = Color(0xFFFFAA00);
-const _red = Color(0xFFFF4466);
-const _dimWhite = Color(0x80FFFFFF);
+const _panelBg = Color(0xFF1A2230);
+const _borderColor = Color(0x14FFFFFF);
+const _green = Color(0xFF10B981);
+const _cyan = Color(0xFF38BDF8);
+const _amber = Color(0xFFF59E0B);
+const _red = Color(0xFFFF6B6B);
+const _dimWhite = Color(0x8CFFFFFF);
 const _labelStyle = TextStyle(
   color: _dimWhite,
-  fontSize: 9,
+  fontSize: 12,
   fontFamily: 'monospace',
 );
 const _valueStyle = TextStyle(
-  color: Color(0xE0FFFFFF),
-  fontSize: 12,
+  color: Color(0xE6FFFFFF),
+  fontSize: 13,
   fontWeight: FontWeight.w700,
   fontFamily: 'monospace',
 );
@@ -60,12 +61,12 @@ class LeftPanel extends ConsumerWidget {
               labelColor: _green,
               unselectedLabelColor: _dimWhite,
               labelStyle: const TextStyle(
-                fontSize: 7,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
               unselectedLabelStyle: const TextStyle(
-                fontSize: 7,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
               labelPadding: EdgeInsets.zero,
@@ -132,6 +133,7 @@ class _VentTab extends ConsumerWidget {
     final activePreset = ref.watch(activePresetProvider);
     final notifier = ref.read(ventParamsNotifierProvider.notifier);
     final presetNotifier = ref.read(activePresetProvider.notifier);
+    final simNotifier = ref.read(simulationNotifierProvider.notifier);
 
     return ListView(
       padding: const EdgeInsets.all(8),
@@ -179,6 +181,7 @@ class _VentTab extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 notifier.applyPreset(preset);
                 presetNotifier.select(preset);
+                simNotifier.reset();
               },
             );
           }).toList(),
@@ -190,32 +193,34 @@ class _VentTab extends ConsumerWidget {
         // ── Common controls ──────────────────────────────────────────
         const _SectionLabel('CONTROLES'),
         const SizedBox(height: 4),
-        _NumericRow(
-          label: 'FR',
-          value: params.rr.toString(),
-          unit: 'rpm',
-          onDecrement: () {
-            notifier.updateRR((params.rr - 1).clamp(6, 40));
-            presetNotifier.select(null);
-          },
-          onIncrement: () {
-            notifier.updateRR((params.rr + 1).clamp(6, 40));
-            presetNotifier.select(null);
-          },
-        ),
-        _NumericRow(
-          label: 'PEEP',
-          value: params.peep.toStringAsFixed(0),
-          unit: 'cmH₂O',
-          onDecrement: () {
-            notifier.updatePeep((params.peep - 1).clamp(0, 25));
-            presetNotifier.select(null);
-          },
-          onIncrement: () {
-            notifier.updatePeep((params.peep + 1).clamp(0, 25));
-            presetNotifier.select(null);
-          },
-        ),
+        if (params.mode != VentMode.aprv) ...[
+          _NumericRow(
+            label: 'FR',
+            value: params.rr.toString(),
+            unit: 'rpm',
+            onDecrement: () {
+              notifier.updateRR((params.rr - 1).clamp(6, 40));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateRR((params.rr + 1).clamp(6, 40));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'PEEP',
+            value: params.peep.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            onDecrement: () {
+              notifier.updatePeep((params.peep - 1).clamp(0, 25));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updatePeep((params.peep + 1).clamp(0, 25));
+              presetNotifier.select(null);
+            },
+          ),
+        ],
         _NumericRow(
           label: 'FiO₂',
           value: '${params.fio2}',
@@ -229,19 +234,20 @@ class _VentTab extends ConsumerWidget {
             presetNotifier.select(null);
           },
         ),
-        _NumericRow(
-          label: 'I:E',
-          value: '1:${params.ieRatio.toStringAsFixed(1)}',
-          unit: '',
-          onDecrement: () {
-            notifier.updateIE((params.ieRatio - 0.5).clamp(1.0, 5.0));
-            presetNotifier.select(null);
-          },
-          onIncrement: () {
-            notifier.updateIE((params.ieRatio + 0.5).clamp(1.0, 5.0));
-            presetNotifier.select(null);
-          },
-        ),
+        if (params.mode != VentMode.aprv)
+          _NumericRow(
+            label: 'I:E',
+            value: '1:${params.ieRatio.toStringAsFixed(1)}',
+            unit: '',
+            onDecrement: () {
+              notifier.updateIE((params.ieRatio - 0.5).clamp(1.0, 5.0));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateIE((params.ieRatio + 0.5).clamp(1.0, 5.0));
+              presetNotifier.select(null);
+            },
+          ),
 
         const SizedBox(height: 6),
         const Divider(color: _borderColor),
@@ -311,6 +317,95 @@ class _VentTab extends ConsumerWidget {
           ),
         ],
 
+        if (params.mode == VentMode.aprv) ...[
+          _NumericRow(
+            label: 'P-high',
+            value: params.pHigh.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            onDecrement: () {
+              notifier.updatePHigh((params.pHigh - 1).clamp(15, 40));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updatePHigh((params.pHigh + 1).clamp(15, 40));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'P-low',
+            value: params.pLow.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            onDecrement: () {
+              notifier.updatePLow((params.pLow - 1).clamp(0, 10));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updatePLow((params.pLow + 1).clamp(0, 10));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'T-high',
+            value: params.tHigh.toStringAsFixed(1),
+            unit: 's',
+            onDecrement: () {
+              notifier.updateTHigh(
+                  double.parse((params.tHigh - 0.5).clamp(2.0, 8.0).toStringAsFixed(1)));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateTHigh(
+                  double.parse((params.tHigh + 0.5).clamp(2.0, 8.0).toStringAsFixed(1)));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'T-low',
+            value: params.tLow.toStringAsFixed(1),
+            unit: 's',
+            onDecrement: () {
+              notifier.updateTLow(
+                  double.parse((params.tLow - 0.1).clamp(0.2, 1.5).toStringAsFixed(1)));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateTLow(
+                  double.parse((params.tLow + 0.1).clamp(0.2, 1.5).toStringAsFixed(1)));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'Resp.Esp.',
+            value: '${params.spontaneousRR}',
+            unit: 'rpm',
+            onDecrement: () {
+              notifier.updateSpontaneousRR(
+                  (params.spontaneousRR - 1).clamp(0, 30));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateSpontaneousRR(
+                  (params.spontaneousRR + 1).clamp(0, 30));
+              presetNotifier.select(null);
+            },
+          ),
+          _NumericRow(
+            label: 'Esforço',
+            value: params.patientEffort.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            onDecrement: () {
+              notifier.updateEffort(
+                  (params.patientEffort - 1).clamp(0, 10));
+              presetNotifier.select(null);
+            },
+            onIncrement: () {
+              notifier.updateEffort(
+                  (params.patientEffort + 1).clamp(0, 10));
+              presetNotifier.select(null);
+            },
+          ),
+        ],
+
         const SizedBox(height: 6),
         const Divider(color: _borderColor),
 
@@ -355,6 +450,7 @@ class _VentTab extends ConsumerWidget {
         VentMode.vcv => 'VOLUME (VCV)',
         VentMode.pcv => 'PRESSÃO (PCV)',
         VentMode.psv => 'SUPORTE (PSV)',
+        VentMode.aprv => 'APRV',
       };
 }
 
@@ -468,7 +564,7 @@ class _PatientTab extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _green,
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               fontFamily: 'monospace',
             ),
@@ -570,11 +666,11 @@ class _GasoTab extends ConsumerWidget {
               ref.read(abgAnalysisNotifierProvider.notifier).analyze();
               DefaultTabController.of(context).animateTo(3); // → Análise
             },
-            icon: const Icon(Icons.science_rounded, size: 14),
+            icon: const Icon(Icons.science_rounded, size: 16),
             label: const Text(
               'ANALISAR GASOMETRIA',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
@@ -614,7 +710,7 @@ class _AnalysisTab extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _dimWhite,
-              fontSize: 10,
+              fontSize: 12,
               fontFamily: 'monospace',
             ),
           ),
@@ -637,7 +733,7 @@ class _AnalysisTab extends ConsumerWidget {
             analysis.primaryDisorder,
             style: const TextStyle(
               color: _cyan,
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               fontFamily: 'monospace',
             ),
@@ -710,7 +806,7 @@ class _AnalysisTab extends ConsumerWidget {
           finding.text,
           style: TextStyle(
             color: color,
-            fontSize: 9,
+            fontSize: 12,
             fontFamily: 'monospace',
             height: 1.3,
           ),
@@ -722,86 +818,7 @@ class _AnalysisTab extends ConsumerWidget {
   Widget _buildAction(AbgAction action) {
     final urgencyColor =
         action.priority == 0 ? _red : (action.priority == 1 ? _amber : _green);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: urgencyColor.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(3),
-          border: Border.all(color: urgencyColor.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(action.icon,
-                    style: const TextStyle(fontSize: 10)),
-                const SizedBox(width: 4),
-                Text(
-                  action.param,
-                  style: TextStyle(
-                    color: urgencyColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: urgencyColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Text(
-                    'P${action.priority}',
-                    style: TextStyle(
-                      color: urgencyColor,
-                      fontSize: 7,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              action.action,
-              style: const TextStyle(
-                color: Color(0xD0FFFFFF),
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'monospace',
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              action.reason,
-              style: const TextStyle(
-                color: _dimWhite,
-                fontSize: 8,
-                fontFamily: 'monospace',
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '📍 ${action.where}',
-              style: TextStyle(
-                color: urgencyColor.withValues(alpha: 0.6),
-                fontSize: 7,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return _ActionCardWithApply(action: action, urgencyColor: urgencyColor);
   }
 
   static Color _alertColor(AlertLevel level) => switch (level) {
@@ -826,7 +843,7 @@ class _SectionLabel extends StatelessWidget {
       text,
       style: const TextStyle(
         color: _dimWhite,
-        fontSize: 8,
+        fontSize: 12,
         fontWeight: FontWeight.w700,
         fontFamily: 'monospace',
         letterSpacing: 1.2,
@@ -865,7 +882,7 @@ class _ChipButton extends StatelessWidget {
             border: Border.all(
               color: selected
                   ? color.withValues(alpha: 0.5)
-                  : const Color(0x20FFFFFF),
+                  : const Color(0x14FFFFFF),
             ),
           ),
           child: Text(
@@ -873,7 +890,7 @@ class _ChipButton extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: selected ? color : _dimWhite,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
               fontFamily: 'monospace',
             ),
@@ -950,15 +967,15 @@ class _PmButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
-          width: 24,
-          height: 24,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0x20FFFFFF)),
-            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: const Color(0x14FFFFFF)),
+            borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, size: 12, color: _dimWhite),
+          child: Icon(icon, size: 16, color: _dimWhite),
         ),
       ),
     );
@@ -991,7 +1008,7 @@ class _DerivedRow extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
@@ -1045,7 +1062,7 @@ class _AbgInput extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: color,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     fontFamily: 'monospace',
                   ),
@@ -1063,7 +1080,7 @@ class _AbgInput extends StatelessWidget {
               refRange,
               style: TextStyle(
                 color: color.withValues(alpha: 0.4),
-                fontSize: 7,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -1078,4 +1095,222 @@ Color _modeColor(VentMode mode) => switch (mode) {
       VentMode.vcv => _green,
       VentMode.pcv => _cyan,
       VentMode.psv => _amber,
+      VentMode.aprv => const Color(0xFFA78BFA),
     };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// _ActionCardWithApply — recommendation card with optional APLICAR button
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _ActionCardWithApply extends ConsumerWidget {
+  const _ActionCardWithApply({
+    required this.action,
+    required this.urgencyColor,
+  });
+
+  final AbgAction action;
+  final Color urgencyColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canApply = _isApplicable(action.param);
+    final targetValue = canApply ? _extractTarget(action.action) : null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: urgencyColor.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: urgencyColor.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(action.icon,
+                    style: const TextStyle(fontSize: 10)),
+                const SizedBox(width: 4),
+                Text(
+                  action.param,
+                  style: TextStyle(
+                    color: urgencyColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: urgencyColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Text(
+                    'P${action.priority}',
+                    style: TextStyle(
+                      color: urgencyColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              action.action,
+              style: const TextStyle(
+                color: Color(0xD0FFFFFF),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'monospace',
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              action.reason,
+              style: const TextStyle(
+                color: _dimWhite,
+                fontSize: 12,
+                fontFamily: 'monospace',
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '\uD83D\uDCCD ${action.where}',
+              style: TextStyle(
+                color: urgencyColor.withValues(alpha: 0.6),
+                fontSize: 12,
+                fontFamily: 'monospace',
+              ),
+            ),
+
+            // APLICAR button.
+            if (canApply && targetValue != null) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    _applyAction(
+                      ref: ref,
+                      param: action.param,
+                      target: targetValue,
+                      context: context,
+                    );
+                  },
+                  icon: const Icon(Icons.check_circle_rounded, size: 14),
+                  label: Text(
+                    'APLICAR: ${_applyLabel(action.param, targetValue)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _red.withValues(alpha: 0.15),
+                    foregroundColor: _red,
+                    side: BorderSide(color: _red.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(3)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static bool _isApplicable(String param) =>
+      param == 'VT' ||
+      param == 'FR' ||
+      param == 'FiO\u2082' ||
+      param == 'PEEP';
+
+  static double? _extractTarget(String actionText) {
+    final paraMatch =
+        RegExp(r'para\s+(\d+(?:\.\d+)?)').firstMatch(actionText);
+    if (paraMatch != null) return double.tryParse(paraMatch.group(1)!);
+
+    final ateMatch =
+        RegExp(r'até\s+(\d+(?:\.\d+)?)').firstMatch(actionText);
+    if (ateMatch != null) return double.tryParse(ateMatch.group(1)!);
+
+    return null;
+  }
+
+  static String _applyLabel(String param, double target) => switch (param) {
+        'VT' => 'VT ${target.round()} mL',
+        'FR' => 'FR ${target.round()} rpm',
+        'FiO\u2082' => 'FiO\u2082 ${target.round()}%',
+        'PEEP' => 'PEEP ${target.round()} cmH\u2082O',
+        _ => '$param $target',
+      };
+
+  static void _applyAction({
+    required WidgetRef ref,
+    required String param,
+    required double target,
+    required BuildContext context,
+  }) {
+    final notifier = ref.read(ventParamsNotifierProvider.notifier);
+    final presetNotifier = ref.read(activePresetProvider.notifier);
+
+    String confirmation;
+
+    switch (param) {
+      case 'VT':
+        final v = target.round().clamp(200, 800);
+        notifier.updateVT(v);
+        confirmation = 'VT ajustado para $v mL';
+      case 'FR':
+        final v = target.round().clamp(6, 40);
+        notifier.updateRR(v);
+        confirmation = 'FR ajustada para $v rpm';
+      case 'FiO\u2082':
+        final v = target.round().clamp(21, 100);
+        notifier.updateFio2(v);
+        confirmation = 'FiO\u2082 ajustada para $v%';
+      case 'PEEP':
+        final v = target.clamp(0, 25).toDouble();
+        notifier.updatePeep(v);
+        confirmation = 'PEEP ajustada para ${v.round()} cmH\u2082O';
+      default:
+        return;
+    }
+
+    presetNotifier.select(null);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$confirmation \u2713',
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: const Color(0xFF1A2A1A),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+}

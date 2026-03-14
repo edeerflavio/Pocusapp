@@ -63,7 +63,7 @@ class BloodGasLabState {
       );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class BloodGasLabNotifier extends _$BloodGasLabNotifier {
   @override
   BloodGasLabState build() => BloodGasLabState.initial();

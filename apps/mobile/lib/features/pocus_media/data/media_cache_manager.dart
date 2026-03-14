@@ -44,7 +44,11 @@ abstract class MediaCacheFileSystem {
 class IoMediaCacheFileSystem implements MediaCacheFileSystem {
   @override
   Future<void> deleteFile(String path) async {
-    await File(path).delete().catchError((_) => File(path));
+    try {
+      await File(path).delete();
+    } catch (_) {
+      // File already gone — nothing to do.
+    }
   }
 }
 

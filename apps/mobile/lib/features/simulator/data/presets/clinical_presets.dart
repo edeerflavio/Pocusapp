@@ -79,6 +79,29 @@ abstract final class ClinicalPresets {
       ieRatio: 3.0,
       patientEffort: 0,
     ),
+
+    // ── SDRA com APRV ────────────────────────────────────────────────
+    // Very low compliance (20), moderate resistance (10).
+    // APRV with P-high 28 cmH₂O, brief release (0.6 s).
+    // Teaches the learner to manage refractory ARDS with APRV.
+    ClinicalPresetType.sdraAprv: VentParams(
+      mode: VentMode.aprv,
+      compliance: 20,
+      resistance: 10,
+      peep: 0,
+      rr: 14,
+      vt: 350,
+      pip: 28,
+      ps: 10,
+      fio2: 80,
+      ieRatio: 2.0,
+      patientEffort: 0,
+      pHigh: 28,
+      pLow: 0,
+      tHigh: 4.5,
+      tLow: 0.6,
+      spontaneousRR: 12,
+    ),
   };
 
   /// Display title in Portuguese for each preset.
@@ -87,6 +110,7 @@ abstract final class ClinicalPresets {
         ClinicalPresetType.sdra => 'SDRA (ARDS)',
         ClinicalPresetType.asma => 'Asma Grave',
         ClinicalPresetType.dpoc => 'DPOC',
+        ClinicalPresetType.sdraAprv => 'SDRA — APRV',
       };
 
   /// Short description in Portuguese for each preset.
@@ -102,5 +126,8 @@ abstract final class ClinicalPresets {
         ClinicalPresetType.dpoc =>
           'Compliance elevada, alta resistência. Risco de air trapping. '
               'I:E 1:3 ou maior.',
+        ClinicalPresetType.sdraAprv =>
+          'SDRA refratária com APRV. P-high 28 cmH₂O, liberação breve. '
+              'Respiração espontânea permitida.',
       };
 }

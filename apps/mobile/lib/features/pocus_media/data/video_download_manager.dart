@@ -164,7 +164,11 @@ class VideoDownloadManager extends ChangeNotifier {
 
         // Validate download.
         if (await file.length() == 0) {
-          await file.delete().catchError((_) => file);
+          try {
+            await file.delete();
+          } catch (_) {
+            // File already gone — nothing to do.
+          }
           _emit(
             storagePath,
             const DownloadTask(

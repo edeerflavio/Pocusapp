@@ -123,6 +123,8 @@ class AutoPeepModifier implements PathophysiologyModifier {
         original.compliance * original.pip * (1.0 - math.exp(-original.inspTime / tau)),
       VentMode.psv =>
         original.compliance * original.ps * (1.0 - math.exp(-original.inspTime / tau)),
+      VentMode.aprv =>
+        original.compliance * original.pHigh * (1.0 - math.exp(-original.tHigh / tau)),
     };
     final trappedVolume = vt * k / (1.0 - k);
 

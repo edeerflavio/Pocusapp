@@ -15,7 +15,7 @@ part 'abg_provider.g.dart';
 // AbgInput snapshot.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AbgInputNotifier extends _$AbgInputNotifier {
   @override
   AbgInput build() => AbgInput.initial();
@@ -43,7 +43,7 @@ class AbgInputNotifier extends _$AbgInputNotifier {
 // the learner a clear "submit → feedback" interaction pattern.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AbgAnalysisNotifier extends _$AbgAnalysisNotifier {
   @override
   AbgAnalysis? build() => null;

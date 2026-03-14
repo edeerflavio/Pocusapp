@@ -33,6 +33,13 @@ enum VentMode {
   /// volume depends on the patient's own effort and lung mechanics.
   /// Inspiration is terminated by flow cycling (typically at 25% of peak).
   psv,
+
+  /// Airway Pressure Release Ventilation — a time-cycled, pressure-
+  /// alternating mode that maintains a high baseline pressure (P-high)
+  /// for most of the cycle (T-high) and briefly releases to a low
+  /// pressure (P-low) for a short time (T-low), allowing CO₂ clearance.
+  /// Spontaneous breathing is permitted during both phases.
+  aprv,
 }
 
 /// Convenience accessors for display labels.
@@ -45,6 +52,7 @@ extension VentModeLabels on VentMode {
         VentMode.vcv => 'Volume Controlado',
         VentMode.pcv => 'Pressão Controlada',
         VentMode.psv => 'Pressão de Suporte',
+        VentMode.aprv => 'APRV (Liberação de Pressão)',
       };
 
   /// Abbreviated label used in compact UI elements (chips, badges).
@@ -52,6 +60,7 @@ extension VentModeLabels on VentMode {
         VentMode.vcv => 'VCV',
         VentMode.pcv => 'PCV',
         VentMode.psv => 'PSV',
+        VentMode.aprv => 'APRV',
       };
 }
 
@@ -151,6 +160,11 @@ enum ClinicalPresetType {
   /// high resistance (15–20 cmH₂O·s/L).
   /// Long τ → requires prolonged expiratory time to avoid air trapping.
   dpoc,
+
+  /// SDRA managed with APRV — Airway Pressure Release Ventilation.
+  /// Very low compliance, high P-high (28 cmH₂O), brief release phase.
+  /// Teaches the learner to manage refractory ARDS with APRV.
+  sdraAprv,
 }
 
 // ---------------------------------------------------------------------------
@@ -171,10 +185,10 @@ abstract final class EngineConstants {
 
   /// Number of waveform samples retained in the rolling display buffer.
   ///
-  /// At 250 Hz with a typical RR of 12–20 /min (cycle time 3–5 s),
-  /// 1500 samples covers approximately 6 seconds — enough to display
-  /// 2–3 complete breath cycles on screen at once.
-  static const int bufferSize = 1500;
+  /// At 250 Hz, 750 samples covers approximately 3 seconds — a faster
+  /// sweep speed similar to real ICU monitors, displaying 1–2 complete
+  /// breath cycles on screen at once.
+  static const int bufferSize = 750;
 
   /// Maximum number of recent breath cycles kept for derived metrics.
   ///

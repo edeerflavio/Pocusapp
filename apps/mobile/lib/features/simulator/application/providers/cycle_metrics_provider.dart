@@ -15,7 +15,7 @@ part 'cycle_metrics_provider.g.dart';
 // watch this and recompute automatically.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class CycleMetricsNotifier extends _$CycleMetricsNotifier {
   @override
   CycleMetrics build() => CycleMetrics.initial();

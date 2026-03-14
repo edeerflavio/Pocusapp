@@ -13,7 +13,7 @@ part 'patient_provider.g.dart';
 // downstream consumer (e.g. AbgAnalyzer).
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class PatientNotifier extends _$PatientNotifier {
   @override
   PatientData build() => PatientData.initial();

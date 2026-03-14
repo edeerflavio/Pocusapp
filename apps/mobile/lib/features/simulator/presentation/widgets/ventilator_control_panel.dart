@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/providers/simulation_provider.dart';
+import '../../application/providers/pathophysiology_provider.dart';
 import '../../application/providers/ventilator_params_provider.dart';
-import '../../data/presets/clinical_presets.dart';
 import '../../domain/enums/ventilation_enums.dart';
+import 'bedside_gasometry_tab.dart';
+import 'scenario_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AMPLE colour system
@@ -21,22 +22,19 @@ const _teal = Color(0xFF00897B);
 const _tealLight = Color(0xFF4DB6AC);
 
 /// Panel background matching the ICU monitor theme.
-const _panelBg = Color(0xFF0A0E16);
+const _panelBg = Color(0xFF1A2230);
 
 /// Surface for cards and soft-key containers.
-const _surface = Color(0xFF111822);
+const _surface = Color(0xFF212B3A);
 
 /// Subtle border for cards and dividers.
-const _border = Color(0x1A4DB6AC);
+const _border = Color(0x14FFFFFF);
 
 /// Dim white for labels.
-const _dimWhite = Color(0x80FFFFFF);
-
-/// Bright white for values.
-const _brightWhite = Color(0xE0FFFFFF);
+const _dimWhite = Color(0x8CFFFFFF);
 
 /// Amber for mode-specific highlights.
-const _amber = Color(0xFFFFAA00);
+const _amber = Color(0xFFF59E0B);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // VentilatorControlPanel — main responsive control panel widget
@@ -64,24 +62,106 @@ class VentilatorControlPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 380;
+    final hasActive = ref.watch(hasActivePathophysiologyProvider);
 
-        if (isWide) {
-          return _WideLayout();
-        }
-        return _NarrowLayout();
-      },
+    return Container(
+      color: _panelBg,
+      child: DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            // ── Tab bar ──────────────────────────────────────────────
+            TabBar(
+              isScrollable: false,
+              indicatorColor: _teal,
+              indicatorWeight: 2,
+              labelColor: _tealLight,
+              unselectedLabelColor: _dimWhite,
+              labelStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'monospace',
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+              ),
+              labelPadding: EdgeInsets.zero,
+              dividerHeight: 0,
+              tabs: [
+                const Tab(
+                  height: 32,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.tune_rounded, size: 14),
+                      SizedBox(width: 3),
+                      Text('VENT'),
+                    ],
+                  ),
+                ),
+                const Tab(
+                  height: 32,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.bloodtype_rounded, size: 14),
+                      SizedBox(width: 3),
+                      Text('GASO'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  height: 32,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bolt_rounded, size: 14),
+                      const SizedBox(width: 3),
+                      const Text('CENA'),
+                      if (hasActive) ...[
+                        const SizedBox(width: 3),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFFF4466),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Container(height: 1, color: _border),
+
+            // ── Tab views ────────────────────────────────────────────
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Tab 0: Ventilator controls (existing content).
+                  _VentilatorContent(),
+                  // Tab 1: Gasometry input + analysis + apply.
+                  const BedsideGasometryTab(),
+                  // Tab 2: Pathophysiology scenarios.
+                  const ScenarioPanel(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// _NarrowLayout — single-column for phones / side panel
+// _VentilatorContent — single-column ventilator controls (full width)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _NarrowLayout extends ConsumerWidget {
+class _VentilatorContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
@@ -96,54 +176,6 @@ class _NarrowLayout extends ConsumerWidget {
           _ModeSpecificControls(),
           SizedBox(height: 10),
           _LungMechanicsSection(),
-          SizedBox(height: 12),
-          _ScenariosSection(),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// _WideLayout — two-column for tablets
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _WideLayout extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      color: _panelBg,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left: controls.
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(10),
-              children: const [
-                _ModeSelector(),
-                SizedBox(height: 10),
-                _ControlsSection(),
-                SizedBox(height: 10),
-                _ModeSpecificControls(),
-                SizedBox(height: 10),
-                _LungMechanicsSection(),
-              ],
-            ),
-          ),
-
-          // Vertical divider.
-          Container(width: 1, color: _border),
-
-          // Right: scenarios.
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(10),
-              children: const [
-                _ScenariosSection(),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -203,7 +235,7 @@ class _ModeSelector extends ConsumerWidget {
             params.mode.label,
             style: const TextStyle(
               color: _tealLight,
-              fontSize: 8,
+              fontSize: 12,
               fontFamily: 'monospace',
               fontWeight: FontWeight.w600,
             ),
@@ -217,6 +249,7 @@ class _ModeSelector extends ConsumerWidget {
         VentMode.vcv => 'Vol',
         VentMode.pcv => 'Press',
         VentMode.psv => 'Suporte',
+        VentMode.aprv => 'Bi-nível',
       };
 }
 
@@ -235,6 +268,8 @@ class _ControlsSection extends ConsumerWidget {
 
     void clearPreset() => presetNotifier.select(null);
 
+    final isAprv = params.mode == VentMode.aprv;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -244,34 +279,36 @@ class _ControlsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 6),
 
-        _ParamKnob(
-          label: 'FR',
-          value: '${params.rr}',
-          unit: 'rpm',
-          color: _coral,
-          onDecrement: () {
-            notifier.updateRR((params.rr - 1).clamp(6, 40));
-            clearPreset();
-          },
-          onIncrement: () {
-            notifier.updateRR((params.rr + 1).clamp(6, 40));
-            clearPreset();
-          },
-        ),
-        _ParamKnob(
-          label: 'PEEP',
-          value: params.peep.toStringAsFixed(0),
-          unit: 'cmH₂O',
-          color: _coral,
-          onDecrement: () {
-            notifier.updatePeep((params.peep - 1).clamp(0, 25));
-            clearPreset();
-          },
-          onIncrement: () {
-            notifier.updatePeep((params.peep + 1).clamp(0, 25));
-            clearPreset();
-          },
-        ),
+        if (!isAprv) ...[
+          _ParamKnob(
+            label: 'FR',
+            value: '${params.rr}',
+            unit: 'rpm',
+            color: _coral,
+            onDecrement: () {
+              notifier.updateRR((params.rr - 1).clamp(6, 40));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateRR((params.rr + 1).clamp(6, 40));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'PEEP',
+            value: params.peep.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            color: _coral,
+            onDecrement: () {
+              notifier.updatePeep((params.peep - 1).clamp(0, 25));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updatePeep((params.peep + 1).clamp(0, 25));
+              clearPreset();
+            },
+          ),
+        ],
         _ParamKnob(
           label: 'FiO₂',
           value: '${params.fio2}',
@@ -286,20 +323,21 @@ class _ControlsSection extends ConsumerWidget {
             clearPreset();
           },
         ),
-        _ParamKnob(
-          label: 'I:E',
-          value: '1:${params.ieRatio.toStringAsFixed(1)}',
-          unit: '',
-          color: _tealLight,
-          onDecrement: () {
-            notifier.updateIE((params.ieRatio - 0.5).clamp(1.0, 5.0));
-            clearPreset();
-          },
-          onIncrement: () {
-            notifier.updateIE((params.ieRatio + 0.5).clamp(1.0, 5.0));
-            clearPreset();
-          },
-        ),
+        if (!isAprv)
+          _ParamKnob(
+            label: 'I:E',
+            value: '1:${params.ieRatio.toStringAsFixed(1)}',
+            unit: '',
+            color: _tealLight,
+            onDecrement: () {
+              notifier.updateIE((params.ieRatio - 0.5).clamp(1.0, 5.0));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateIE((params.ieRatio + 0.5).clamp(1.0, 5.0));
+              clearPreset();
+            },
+          ),
       ],
     );
   }
@@ -324,12 +362,14 @@ class _ModeSpecificControls extends ConsumerWidget {
       VentMode.vcv => 'VOLUME (VCV)',
       VentMode.pcv => 'PRESSÃO (PCV)',
       VentMode.psv => 'SUPORTE (PSV)',
+      VentMode.aprv => 'APRV',
     };
 
     final icon = switch (params.mode) {
       VentMode.vcv => Icons.straighten_rounded,
       VentMode.pcv => Icons.compress_rounded,
       VentMode.psv => Icons.self_improvement_rounded,
+      VentMode.aprv => Icons.swap_vert_rounded,
     };
 
     return Column(
@@ -382,6 +422,101 @@ class _ModeSpecificControls extends ConsumerWidget {
             },
             onIncrement: () {
               notifier.updatePS((params.ps + 1).clamp(5, 30));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'Esforço',
+            value: params.patientEffort.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            color: _amber,
+            onDecrement: () {
+              notifier.updateEffort(
+                  (params.patientEffort - 1).clamp(0, 10));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateEffort(
+                  (params.patientEffort + 1).clamp(0, 10));
+              clearPreset();
+            },
+          ),
+        ],
+
+        if (params.mode == VentMode.aprv) ...[
+          _ParamKnob(
+            label: 'P-high',
+            value: params.pHigh.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            color: _coral,
+            onDecrement: () {
+              notifier.updatePHigh((params.pHigh - 1).clamp(15, 40));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updatePHigh((params.pHigh + 1).clamp(15, 40));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'P-low',
+            value: params.pLow.toStringAsFixed(0),
+            unit: 'cmH₂O',
+            color: _coral,
+            onDecrement: () {
+              notifier.updatePLow((params.pLow - 1).clamp(0, 10));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updatePLow((params.pLow + 1).clamp(0, 10));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'T-high',
+            value: params.tHigh.toStringAsFixed(1),
+            unit: 's',
+            color: _tealLight,
+            onDecrement: () {
+              notifier.updateTHigh(
+                  double.parse((params.tHigh - 0.5).clamp(2.0, 8.0).toStringAsFixed(1)));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateTHigh(
+                  double.parse((params.tHigh + 0.5).clamp(2.0, 8.0).toStringAsFixed(1)));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'T-low',
+            value: params.tLow.toStringAsFixed(1),
+            unit: 's',
+            color: _tealLight,
+            onDecrement: () {
+              notifier.updateTLow(
+                  double.parse((params.tLow - 0.1).clamp(0.2, 1.5).toStringAsFixed(1)));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateTLow(
+                  double.parse((params.tLow + 0.1).clamp(0.2, 1.5).toStringAsFixed(1)));
+              clearPreset();
+            },
+          ),
+          _ParamKnob(
+            label: 'Resp.Esp.',
+            value: '${params.spontaneousRR}',
+            unit: 'rpm',
+            color: _amber,
+            onDecrement: () {
+              notifier.updateSpontaneousRR(
+                  (params.spontaneousRR - 1).clamp(0, 30));
+              clearPreset();
+            },
+            onIncrement: () {
+              notifier.updateSpontaneousRR(
+                  (params.spontaneousRR + 1).clamp(0, 30));
               clearPreset();
             },
           ),
@@ -473,7 +608,7 @@ class _LungMechanicsSection extends ConsumerWidget {
                 'τ = ${params.tau.toStringAsFixed(2)}s',
                 style: TextStyle(
                   color: params.tau > 1.0 ? _coral : _tealLight,
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'monospace',
                 ),
@@ -484,7 +619,7 @@ class _LungMechanicsSection extends ConsumerWidget {
                 style: TextStyle(
                   color: (params.tau > 1.0 ? _coral : _tealLight)
                       .withValues(alpha: 0.5),
-                  fontSize: 7,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -494,190 +629,6 @@ class _LungMechanicsSection extends ConsumerWidget {
       ],
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// _ScenariosSection — clinical preset cards
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _ScenariosSection extends ConsumerWidget {
-  const _ScenariosSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activePreset = ref.watch(activePresetProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(
-          icon: Icons.medical_services_rounded,
-          label: 'CENÁRIOS CLÍNICOS',
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Carregue presets validados para simular\ncenários clínicos reais.',
-          style: TextStyle(
-            color: _dimWhite,
-            fontSize: 7,
-            fontFamily: 'monospace',
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...ClinicalPresetType.values.map(
-          (preset) => _ScenarioCard(
-            preset: preset,
-            isActive: activePreset == preset,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// _ScenarioCard — single clinical scenario card
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _ScenarioCard extends ConsumerWidget {
-  const _ScenarioCard({
-    required this.preset,
-    required this.isActive,
-  });
-
-  final ClinicalPresetType preset;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(ventParamsNotifierProvider.notifier);
-    final presetNotifier = ref.read(activePresetProvider.notifier);
-    final simNotifier = ref.read(simulationNotifierProvider.notifier);
-    final params = ClinicalPresets.presets[preset]!;
-
-    final accentColor = isActive ? _coral : _teal;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            notifier.applyPreset(preset);
-            presetNotifier.select(preset);
-            simNotifier.reset();
-          },
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? accentColor.withValues(alpha: 0.08)
-                  : _surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: isActive
-                    ? accentColor.withValues(alpha: 0.4)
-                    : _border,
-                width: isActive ? 1.5 : 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title row.
-                Row(
-                  children: [
-                    Text(
-                      _scenarioEmoji(preset),
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        ClinicalPresets.title(preset),
-                        style: TextStyle(
-                          color: isActive ? _coral : _brightWhite,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                    if (isActive)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _coral.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: const Text(
-                          'ATIVO',
-                          style: TextStyle(
-                            color: _coral,
-                            fontSize: 7,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-
-                // Description.
-                Text(
-                  ClinicalPresets.description(preset),
-                  style: TextStyle(
-                    color: accentColor.withValues(alpha: 0.6),
-                    fontSize: 7,
-                    fontFamily: 'monospace',
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // Key parameters chips.
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 3,
-                  children: [
-                    _ParamChip(
-                        label: params.mode.shortLabel, color: accentColor),
-                    _ParamChip(
-                        label: 'C:${params.compliance.toStringAsFixed(0)}',
-                        color: accentColor),
-                    _ParamChip(
-                        label: 'R:${params.resistance.toStringAsFixed(0)}',
-                        color: accentColor),
-                    _ParamChip(
-                        label: 'PEEP:${params.peep.toStringAsFixed(0)}',
-                        color: accentColor),
-                    _ParamChip(
-                        label: 'FiO₂:${params.fio2}%',
-                        color: accentColor),
-                    _ParamChip(
-                        label: 'I:E 1:${params.ieRatio.toStringAsFixed(1)}',
-                        color: accentColor),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _scenarioEmoji(ClinicalPresetType type) => switch (type) {
-        ClinicalPresetType.normal => '🫁',
-        ClinicalPresetType.sdra => '🔴',
-        ClinicalPresetType.asma => '💨',
-        ClinicalPresetType.dpoc => '🌬️',
-      };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -695,13 +646,13 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 11, color: _tealLight),
+        Icon(icon, size: 14, color: _tealLight),
         const SizedBox(width: 4),
         Text(
           label,
           style: const TextStyle(
             color: _tealLight,
-            fontSize: 8,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             fontFamily: 'monospace',
             letterSpacing: 1.2,
@@ -764,7 +715,7 @@ class _SoftKey extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: selected ? selectedColor : _dimWhite,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'monospace',
                 ),
@@ -774,7 +725,7 @@ class _SoftKey extends StatelessWidget {
                 style: TextStyle(
                   color: (selected ? selectedColor : _dimWhite)
                       .withValues(alpha: 0.5),
-                  fontSize: 7,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -824,7 +775,7 @@ class _ParamKnob extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: _dimWhite,
-                  fontSize: 9,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -848,7 +799,7 @@ class _ParamKnob extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: color,
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'monospace',
                 ),
@@ -874,7 +825,7 @@ class _ParamKnob extends StatelessWidget {
                 textAlign: TextAlign.right,
                 style: const TextStyle(
                   color: _dimWhite,
-                  fontSize: 8,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -904,47 +855,19 @@ class _KnobButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          width: 26,
-          height: 26,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withValues(alpha: 0.08),
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
-          child: Icon(icon, size: 13, color: color),
+          child: Icon(icon, size: 18, color: color),
         ),
       ),
     );
   }
 }
 
-/// Small parameter chip displayed inside scenario cards.
-class _ParamChip extends StatelessWidget {
-  const _ParamChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color.withValues(alpha: 0.7),
-          fontSize: 7,
-          fontWeight: FontWeight.w600,
-          fontFamily: 'monospace',
-        ),
-      ),
-    );
-  }
-}

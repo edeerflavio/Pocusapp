@@ -11,15 +11,15 @@ import '../../domain/services/blood_gas_engine.dart';
 // Theme constants
 // ═══════════════════════════════════════════════════════════════════════════
 
-const _panelBg = Color(0xFF0A0E16);
-const _surface = Color(0xFF111822);
-const _border = Color(0x1A00FF88);
-const _green = Color(0xFF00E676);
-const _cyan = Color(0xFF00CCFF);
-const _amber = Color(0xFFFFAA00);
-const _red = Color(0xFFFF4466);
+const _panelBg = Color(0xFF1A2230);
+const _surface = Color(0xFF212B3A);
+const _border = Color(0x14FFFFFF);
+const _green = Color(0xFF10B981);
+const _cyan = Color(0xFF38BDF8);
+const _amber = Color(0xFFF59E0B);
+const _red = Color(0xFFFF6B6B);
 const _teal = Color(0xFF00897B);
-const _dimWhite = Color(0x80FFFFFF);
+const _dimWhite = Color(0x8CFFFFFF);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BloodGasPanel — main widget
@@ -103,7 +103,7 @@ class _LivePreviewSection extends StatelessWidget {
           'Valores estimados em tempo real (CO₂ washout ~45s)',
           style: TextStyle(
             color: _dimWhite,
-            fontSize: 7,
+            fontSize: 12,
             fontFamily: 'monospace',
             height: 1.3,
           ),
@@ -237,11 +237,11 @@ class _RequestButton extends ConsumerWidget {
                   color: _amber,
                 ),
               )
-            : const Icon(Icons.science_rounded, size: 14),
+            : const Icon(Icons.science_rounded, size: 16),
         label: Text(
           pending ? 'PROCESSANDO...' : 'SOLICITAR GASOMETRIA',
           style: const TextStyle(
-            fontSize: 10,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
             fontFamily: 'monospace',
           ),
@@ -298,7 +298,7 @@ class _LabResultCard extends StatelessWidget {
                 'GASOMETRIA #$resultNumber',
                 style: const TextStyle(
                   color: _teal,
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
                   letterSpacing: 1.0,
@@ -316,7 +316,7 @@ class _LabResultCard extends StatelessWidget {
                   'RESULTADO',
                   style: TextStyle(
                     color: _green,
-                    fontSize: 6,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'monospace',
                   ),
@@ -392,7 +392,7 @@ class _EmptyResultCard extends StatelessWidget {
       ),
       child: const Column(
         children: [
-          Icon(Icons.science_outlined, size: 20, color: _dimWhite),
+          Icon(Icons.science_outlined, size: 24, color: _dimWhite),
           SizedBox(height: 6),
           Text(
             'Nenhuma gasometria solicitada.\n'
@@ -400,7 +400,7 @@ class _EmptyResultCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _dimWhite,
-              fontSize: 8,
+              fontSize: 12,
               fontFamily: 'monospace',
               height: 1.4,
             ),
@@ -450,7 +450,7 @@ class _WeaningSection extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: weaning.readyToWean ? _green : _amber,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               fontFamily: 'monospace',
             ),
@@ -480,7 +480,7 @@ class _WeaningSection extends ConsumerWidget {
             // Pass/fail icon.
             Icon(
               c.passed ? Icons.check_circle_rounded : Icons.cancel_rounded,
-              size: 10,
+              size: 14,
               color: color,
             ),
             const SizedBox(width: 6),
@@ -490,7 +490,7 @@ class _WeaningSection extends ConsumerWidget {
                 c.name,
                 style: const TextStyle(
                   color: _dimWhite,
-                  fontSize: 8,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -500,7 +500,7 @@ class _WeaningSection extends ConsumerWidget {
               '${c.value} ${c.unit}',
               style: TextStyle(
                 color: color,
-                fontSize: 10,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
@@ -511,7 +511,7 @@ class _WeaningSection extends ConsumerWidget {
               c.target,
               style: TextStyle(
                 color: color.withValues(alpha: 0.4),
-                fontSize: 7,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -552,7 +552,7 @@ class _RsbiCard extends StatelessWidget {
                 'RSBI (Tobin)',
                 style: TextStyle(
                   color: color.withValues(alpha: 0.6),
-                  fontSize: 7,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'monospace',
                 ),
@@ -561,7 +561,7 @@ class _RsbiCard extends StatelessWidget {
                 'FR / VT(L)',
                 style: TextStyle(
                   color: color.withValues(alpha: 0.35),
-                  fontSize: 6,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -585,7 +585,7 @@ class _RsbiCard extends StatelessWidget {
                 passed ? 'FAVORÁVEL' : 'DESFAVORÁVEL',
                 style: TextStyle(
                   color: color,
-                  fontSize: 7,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
                 ),
@@ -594,7 +594,7 @@ class _RsbiCard extends StatelessWidget {
                 'meta < 105',
                 style: TextStyle(
                   color: color.withValues(alpha: 0.4),
-                  fontSize: 6,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                 ),
               ),
@@ -619,13 +619,13 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 11, color: _teal),
+        Icon(icon, size: 14, color: _teal),
         const SizedBox(width: 4),
         Text(
           label,
           style: const TextStyle(
             color: _teal,
-            fontSize: 8,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             fontFamily: 'monospace',
             letterSpacing: 1.2,
@@ -661,7 +661,7 @@ class _LiveValue extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: _dimWhite,
-                fontSize: 7,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -671,7 +671,7 @@ class _LiveValue extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
                 fontFamily: 'monospace',
               ),
@@ -682,7 +682,7 @@ class _LiveValue extends StatelessWidget {
               unit,
               style: TextStyle(
                 color: color.withValues(alpha: 0.35),
-                fontSize: 7,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -729,7 +729,7 @@ class _ResultRow extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: _dimWhite,
-                fontSize: 8,
+                fontSize: 12,
                 fontFamily: 'monospace',
               ),
             ),
@@ -739,7 +739,7 @@ class _ResultRow extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'monospace',
               ),
@@ -749,7 +749,7 @@ class _ResultRow extends StatelessWidget {
             ref,
             style: TextStyle(
               color: color.withValues(alpha: 0.3),
-              fontSize: 6,
+              fontSize: 12,
               fontFamily: 'monospace',
             ),
           ),

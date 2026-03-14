@@ -3,47 +3,89 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers/pathophysiology_provider.dart';
+import '../../application/providers/simulation_provider.dart';
+import '../../application/providers/ventilator_params_provider.dart';
+import '../../data/presets/clinical_presets.dart';
 import '../../domain/entities/pathophysiology/pathophysiology_entities.dart';
+import '../../domain/enums/ventilation_enums.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Theme constants
 // ═══════════════════════════════════════════════════════════════════════════
 
-const _borderColor = Color(0x1A00FF88);
-const _green = Color(0xFF00FF88);
-const _red = Color(0xFFFF4466);
-const _amber = Color(0xFFFFAA00);
-const _dimWhite = Color(0x80FFFFFF);
+const _borderColor = Color(0x14FFFFFF);
+const _surface = Color(0xFF212B3A);
+const _green = Color(0xFF10B981);
+const _teal = Color(0xFF00897B);
+const _tealLight = Color(0xFF4DB6AC);
+const _coral = Color(0xFFFF6B6B);
+const _red = Color(0xFFFF6B6B);
+const _amber = Color(0xFFF59E0B);
+const _dimWhite = Color(0x8CFFFFFF);
+const _brightWhite = Color(0xE6FFFFFF);
 
-/// Scenario panel — displays and controls pathophysiological events
-/// that can be overlaid on the base ventilator simulation.
+/// Unified scenario panel — clinical presets + pathophysiology complications.
 ///
-/// Each event is shown as a card with toggle, severity selector, and
-/// intensity slider. Active events are highlighted in red to draw
-/// attention to the ongoing clinical perturbation.
+/// ## Section 1: PRESETS CLINICOS
+/// Cards for Normal, SDRA, Asma, DPOC, SDRA-APRV. Selecting one applies
+/// the preset parameters and resets the simulation.
+///
+/// ## Section 2: COMPLICACOES
+/// Toggle-able pathophysiological events (Auto-PEEP, Pneumothorax, etc.)
+/// with severity selector and intensity slider.
 class ScenarioPanel extends ConsumerWidget {
   const ScenarioPanel({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activePreset = ref.watch(activePresetProvider);
     final pathoState = ref.watch(pathophysiologyNotifierProvider);
     final hasActive = pathoState.hasActiveEvents;
 
     return ListView(
       padding: const EdgeInsets.all(8),
       children: [
-        // ── Header ────────────────────────────────────────────────────
+        // ═════════════════════════════════════════════════════════════════
+        // Section 1: Clinical presets
+        // ═════════════════════════════════════════════════════════════════
+        const _SectionHeader(
+          icon: Icons.medical_services_rounded,
+          label: 'PRESETS CLÍNICOS',
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Carregue presets validados para simular\ncenários clínicos reais.',
+          style: TextStyle(
+            color: _dimWhite,
+            fontSize: 12,
+            fontFamily: 'monospace',
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...ClinicalPresetType.values.map(
+          (preset) => _PresetCard(
+            preset: preset,
+            isActive: activePreset == preset,
+          ),
+        ),
+
+        // ═════════════════════════════════════════════════════════════════
+        // Divider
+        // ═════════════════════════════════════════════════════════════════
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Divider(color: _borderColor, height: 1),
+        ),
+
+        // ═════════════════════════════════════════════════════════════════
+        // Section 2: Pathophysiology complications
+        // ═════════════════════════════════════════════════════════════════
         Row(
           children: [
-            const Text(
-              'CENARIOS CLINICOS',
-              style: TextStyle(
-                color: _dimWhite,
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'monospace',
-                letterSpacing: 1.2,
-              ),
+            const _SectionHeader(
+              icon: Icons.bolt_rounded,
+              label: 'COMPLICAÇÕES',
             ),
             const Spacer(),
             if (hasActive)
@@ -56,7 +98,7 @@ class ScenarioPanel extends ConsumerWidget {
                 },
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: _red.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(3),
@@ -66,7 +108,7 @@ class ScenarioPanel extends ConsumerWidget {
                     'LIMPAR',
                     style: TextStyle(
                       color: _red,
-                      fontSize: 7,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'monospace',
                     ),
@@ -78,7 +120,7 @@ class ScenarioPanel extends ConsumerWidget {
 
         const SizedBox(height: 6),
 
-        // ── Info box ──────────────────────────────────────────────────
+        // Info box.
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
@@ -87,11 +129,11 @@ class ScenarioPanel extends ConsumerWidget {
             border: Border.all(color: _green.withValues(alpha: 0.1)),
           ),
           child: const Text(
-            'Ative eventos para simular cenarios\n'
-            'clinicos. As curvas reagem em tempo real.',
+            'Ative complicações sobre o cenário atual.\n'
+            'As curvas reagem em tempo real.',
             style: TextStyle(
               color: _dimWhite,
-              fontSize: 7,
+              fontSize: 12,
               fontFamily: 'monospace',
               height: 1.4,
             ),
@@ -100,13 +142,167 @@ class ScenarioPanel extends ConsumerWidget {
 
         const SizedBox(height: 8),
 
-        // ── Event cards ───────────────────────────────────────────────
+        // Event cards.
         ...pathoState.events.map(
           (event) => _EventCard(event: event),
         ),
       ],
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// _PresetCard — single clinical preset card
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _PresetCard extends ConsumerWidget {
+  const _PresetCard({
+    required this.preset,
+    required this.isActive,
+  });
+
+  final ClinicalPresetType preset;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(ventParamsNotifierProvider.notifier);
+    final presetNotifier = ref.read(activePresetProvider.notifier);
+    final simNotifier = ref.read(simulationNotifierProvider.notifier);
+    final params = ClinicalPresets.presets[preset]!;
+
+    final accentColor = isActive ? _coral : _teal;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            notifier.applyPreset(preset);
+            presetNotifier.select(preset);
+            simNotifier.reset();
+          },
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? accentColor.withValues(alpha: 0.08)
+                  : _surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isActive
+                    ? accentColor.withValues(alpha: 0.4)
+                    : _borderColor,
+                width: isActive ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title row.
+                Row(
+                  children: [
+                    Text(
+                      _scenarioEmoji(preset),
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        ClinicalPresets.title(preset),
+                        style: TextStyle(
+                          color: isActive ? _coral : _brightWhite,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                    if (isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _coral.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text(
+                          'ATIVO',
+                          style: TextStyle(
+                            color: _coral,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+
+                // Description.
+                Text(
+                  ClinicalPresets.description(preset),
+                  style: TextStyle(
+                    color: accentColor.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Key parameters chips.
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 3,
+                  children: [
+                    _ParamChip(
+                        label: params.mode.shortLabel, color: accentColor),
+                    _ParamChip(
+                        label: 'C:${params.compliance.toStringAsFixed(0)}',
+                        color: accentColor),
+                    _ParamChip(
+                        label: 'R:${params.resistance.toStringAsFixed(0)}',
+                        color: accentColor),
+                    if (params.mode == VentMode.aprv) ...[
+                      _ParamChip(
+                          label: 'P-hi:${params.pHigh.toStringAsFixed(0)}',
+                          color: accentColor),
+                      _ParamChip(
+                          label: 'P-lo:${params.pLow.toStringAsFixed(0)}',
+                          color: accentColor),
+                    ] else ...[
+                      _ParamChip(
+                          label: 'PEEP:${params.peep.toStringAsFixed(0)}',
+                          color: accentColor),
+                      _ParamChip(
+                          label: 'I:E 1:${params.ieRatio.toStringAsFixed(1)}',
+                          color: accentColor),
+                    ],
+                    _ParamChip(
+                        label: 'FiO₂:${params.fio2}%',
+                        color: accentColor),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _scenarioEmoji(ClinicalPresetType type) => switch (type) {
+        ClinicalPresetType.normal => '🫁',
+        ClinicalPresetType.sdra => '🔴',
+        ClinicalPresetType.asma => '💨',
+        ClinicalPresetType.dpoc => '🌬️',
+        ClinicalPresetType.sdraAprv => '🔄',
+      };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -155,7 +351,7 @@ class _EventCard extends ConsumerWidget {
                     event.label,
                     style: TextStyle(
                       color: accentColor,
-                      fontSize: 9,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'monospace',
                     ),
@@ -187,7 +383,7 @@ class _EventCard extends ConsumerWidget {
                 event.description,
                 style: TextStyle(
                   color: accentColor.withValues(alpha: 0.5),
-                  fontSize: 7,
+                  fontSize: 12,
                   fontFamily: 'monospace',
                   height: 1.3,
                 ),
@@ -205,7 +401,7 @@ class _EventCard extends ConsumerWidget {
                     'Severidade',
                     style: TextStyle(
                       color: _dimWhite,
-                      fontSize: 7,
+                      fontSize: 12,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -226,7 +422,7 @@ class _EventCard extends ConsumerWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                              horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: selected
                                 ? _red.withValues(alpha: 0.15)
@@ -242,7 +438,7 @@ class _EventCard extends ConsumerWidget {
                             label,
                             style: TextStyle(
                               color: selected ? _red : _dimWhite,
-                              fontSize: 7,
+                              fontSize: 12,
                               fontWeight: selected
                                   ? FontWeight.w700
                                   : FontWeight.w400,
@@ -265,7 +461,7 @@ class _EventCard extends ConsumerWidget {
                     'Intensidade',
                     style: TextStyle(
                       color: _dimWhite,
-                      fontSize: 7,
+                      fontSize: 12,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -296,7 +492,7 @@ class _EventCard extends ConsumerWidget {
                       '${(event.intensity * 100).round()}%',
                       style: const TextStyle(
                         color: _amber,
-                        fontSize: 7,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         fontFamily: 'monospace',
                       ),
@@ -306,6 +502,66 @@ class _EventCard extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Shared small widgets
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: _tealLight),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: _tealLight,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'monospace',
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ParamChip extends StatelessWidget {
+  const _ParamChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color.withValues(alpha: 0.7),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'monospace',
         ),
       ),
     );

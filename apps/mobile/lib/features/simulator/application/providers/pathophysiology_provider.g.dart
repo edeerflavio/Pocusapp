@@ -7,7 +7,7 @@ part of 'pathophysiology_provider.dart';
 // **************************************************************************
 
 String _$activePathophysiologyHash() =>
-    r'29512680db5e03146d8771683c2b8af4c09cc8f7';
+    r'f0682ecb13009b7b30c1fd732ea42844ee5178f6';
 
 /// Currently active pathophysiology events.
 ///
@@ -17,7 +17,7 @@ String _$activePathophysiologyHash() =>
 /// Copied from [activePathophysiology].
 @ProviderFor(activePathophysiology)
 final activePathophysiologyProvider =
-    AutoDisposeProvider<List<PathophysiologyEvent>>.internal(
+    Provider<List<PathophysiologyEvent>>.internal(
   activePathophysiology,
   name: r'activePathophysiologyProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -27,10 +27,9 @@ final activePathophysiologyProvider =
   allTransitiveDependencies: null,
 );
 
-typedef ActivePathophysiologyRef
-    = AutoDisposeProviderRef<List<PathophysiologyEvent>>;
+typedef ActivePathophysiologyRef = ProviderRef<List<PathophysiologyEvent>>;
 String _$hasActivePathophysiologyHash() =>
-    r'f36ff4bd18fe28508c66e39f09eabb3b5b8f1e97';
+    r'a05b01ead1f8d38a59d4db62e4c18d0ea9c7de42';
 
 /// Whether any pathophysiology event is currently active.
 ///
@@ -39,7 +38,7 @@ String _$hasActivePathophysiologyHash() =>
 ///
 /// Copied from [hasActivePathophysiology].
 @ProviderFor(hasActivePathophysiology)
-final hasActivePathophysiologyProvider = AutoDisposeProvider<bool>.internal(
+final hasActivePathophysiologyProvider = Provider<bool>.internal(
   hasActivePathophysiology,
   name: r'hasActivePathophysiologyProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -49,9 +48,9 @@ final hasActivePathophysiologyProvider = AutoDisposeProvider<bool>.internal(
   allTransitiveDependencies: null,
 );
 
-typedef HasActivePathophysiologyRef = AutoDisposeProviderRef<bool>;
+typedef HasActivePathophysiologyRef = ProviderRef<bool>;
 String _$pathophysiologyNotifierHash() =>
-    r'ea1403e3744ded109c776eed2e517197d1e46da3';
+    r'8dc9afa8bfd863dd0f9041a717d3354de1f3f457';
 
 /// Manages the set of pathophysiological events that can be overlaid on
 /// the base ventilator simulation.
@@ -63,8 +62,8 @@ String _$pathophysiologyNotifierHash() =>
 ///
 /// Copied from [PathophysiologyNotifier].
 @ProviderFor(PathophysiologyNotifier)
-final pathophysiologyNotifierProvider = AutoDisposeNotifierProvider<
-    PathophysiologyNotifier, PathophysiologyState>.internal(
+final pathophysiologyNotifierProvider =
+    NotifierProvider<PathophysiologyNotifier, PathophysiologyState>.internal(
   PathophysiologyNotifier.new,
   name: r'pathophysiologyNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -74,6 +73,6 @@ final pathophysiologyNotifierProvider = AutoDisposeNotifierProvider<
   allTransitiveDependencies: null,
 );
 
-typedef _$PathophysiologyNotifier = AutoDisposeNotifier<PathophysiologyState>;
+typedef _$PathophysiologyNotifier = Notifier<PathophysiologyState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

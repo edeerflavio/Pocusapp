@@ -23,7 +23,7 @@ part 'pathophysiology_provider.g.dart';
 /// adjusted. The [SimulationNotifier] reads the active events via
 /// [activePathophysiologyProvider] and applies the corresponding
 /// modifiers through [PathophysiologyRegistry].
-@riverpod
+@Riverpod(keepAlive: true)
 class PathophysiologyNotifier extends _$PathophysiologyNotifier {
   @override
   PathophysiologyState build() {
@@ -110,7 +110,7 @@ class PathophysiologyNotifier extends _$PathophysiologyNotifier {
 ///
 /// Used by [SimulationNotifier] in the game loop to decide which
 /// modifiers to apply. Returns an empty list when no events are active.
-@riverpod
+@Riverpod(keepAlive: true)
 List<PathophysiologyEvent> activePathophysiology(
     ActivePathophysiologyRef ref) =>
     ref.watch(pathophysiologyNotifierProvider).activeEvents;
@@ -119,6 +119,6 @@ List<PathophysiologyEvent> activePathophysiology(
 ///
 /// Used by the UI to show/hide warning indicators (e.g. red badge
 /// on the Scenarios tab).
-@riverpod
+@Riverpod(keepAlive: true)
 bool hasActivePathophysiology(HasActivePathophysiologyRef ref) =>
     ref.watch(pathophysiologyNotifierProvider).hasActiveEvents;

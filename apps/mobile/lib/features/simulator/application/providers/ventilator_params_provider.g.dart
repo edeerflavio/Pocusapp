@@ -89,12 +89,12 @@ final mechanicalPowerProvider = AutoDisposeProvider<double>.internal(
 
 typedef MechanicalPowerRef = AutoDisposeProviderRef<double>;
 String _$ventParamsNotifierHash() =>
-    r'63d4995ed367feb0ec616f9f8d54f30d1cd52547';
+    r'd1587b71835c44d11ad7f25a60f95cf8ece9ccb5';
 
 /// See also [VentParamsNotifier].
 @ProviderFor(VentParamsNotifier)
 final ventParamsNotifierProvider =
-    AutoDisposeNotifierProvider<VentParamsNotifier, VentParams>.internal(
+    NotifierProvider<VentParamsNotifier, VentParams>.internal(
   VentParamsNotifier.new,
   name: r'ventParamsNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -104,13 +104,13 @@ final ventParamsNotifierProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$VentParamsNotifier = AutoDisposeNotifier<VentParams>;
-String _$activePresetHash() => r'e7a43bebffc1271cd1350b072b207ee50135bde9';
+typedef _$VentParamsNotifier = Notifier<VentParams>;
+String _$activePresetHash() => r'db09f2cbef0c72797ecbd836e6ac63f473816f64';
 
 /// See also [ActivePreset].
 @ProviderFor(ActivePreset)
 final activePresetProvider =
-    AutoDisposeNotifierProvider<ActivePreset, ClinicalPresetType?>.internal(
+    NotifierProvider<ActivePreset, ClinicalPresetType?>.internal(
   ActivePreset.new,
   name: r'activePresetProvider',
   debugGetCreateSourceHash:
@@ -119,6 +119,6 @@ final activePresetProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$ActivePreset = AutoDisposeNotifier<ClinicalPresetType?>;
+typedef _$ActivePreset = Notifier<ClinicalPresetType?>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

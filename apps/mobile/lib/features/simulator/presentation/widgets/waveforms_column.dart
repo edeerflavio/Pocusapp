@@ -8,10 +8,10 @@ import 'waveform_widget.dart';
 // Theme constants
 // ═══════════════════════════════════════════════════════════════════════════
 
-const _green = Color(0xFF00E676);
-const _cyan = Color(0xFF00CCFF);
-const _amber = Color(0xFFFFAA00);
-const _borderColor = Color(0x1A00FF88);
+const _green = Color(0xFF4ADE80);
+const _cyan = Color(0xFF38BDF8);
+const _amber = Color(0xFFFCD34D);
+const _borderColor = Color(0x14FFFFFF);
 
 /// Central column: real-time value strip + three stacked waveform channels.
 ///
@@ -107,7 +107,7 @@ class _ValueStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 28,
-      color: const Color(0xFF0A0E16),
+      color: const Color(0xFF1A2230),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -160,7 +160,7 @@ class _InstantValue extends StatelessWidget {
           label,
           style: TextStyle(
             color: color.withValues(alpha: 0.5),
-            fontSize: 8,
+            fontSize: 12,
             fontFamily: 'monospace',
           ),
         ),
@@ -169,7 +169,7 @@ class _InstantValue extends StatelessWidget {
           value,
           style: TextStyle(
             color: color,
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: FontWeight.w800,
             fontFamily: 'monospace',
           ),
@@ -179,7 +179,7 @@ class _InstantValue extends StatelessWidget {
           unit,
           style: TextStyle(
             color: color.withValues(alpha: 0.3),
-            fontSize: 7,
+            fontSize: 12,
             fontFamily: 'monospace',
           ),
         ),

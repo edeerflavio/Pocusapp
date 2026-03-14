@@ -25,6 +25,9 @@ abstract final class VentilatorEngine {
   /// [time] is automatically wrapped to [VentParams.totalCycleTime] so the
   /// caller may pass a continuously increasing wall-clock value.
   static BreathSample simulate(VentParams p, double time) {
+    // APRV has its own two-phase cycle logic.
+    if (p.mode == VentMode.aprv) return _aprvSimulate(p, time);
+
     final cycle = p.totalCycleTime;
     final t = time % cycle;
     final ti = p.inspTime;
@@ -34,6 +37,7 @@ abstract final class VentilatorEngine {
         VentMode.vcv => _vcvInsp(p, t),
         VentMode.pcv => _pcvInsp(p, t),
         VentMode.psv => _psvInsp(p, t),
+        VentMode.aprv => _pcvInsp(p, t), // unreachable, handled above
       };
     } else {
       return _expiration(p, t - ti, _vEndInsp(p));
@@ -63,6 +67,9 @@ abstract final class VentilatorEngine {
       VentMode.psv => cL *
           (p.ps + p.patientEffort * 2.0 / math.pi) *
           (1.0 - math.exp(-ti / tau)),
+
+      // APRV: volume at end of P-high phase.
+      VentMode.aprv => cL * p.pHigh * (1.0 - math.exp(-ti / tau)),
     };
   }
 
@@ -179,6 +186,87 @@ abstract final class VentilatorEngine {
   // V(t) = V_end × e^(−t/τ)
   // Flow  = −V_end / τ × e^(−t/τ)   (negative = out of lungs)
   // Paw   = PEEP + V/C
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // APRV — Airway Pressure Release Ventilation
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // Two pressure levels (P-high / P-low) with time-cycling (T-high / T-low).
+  //
+  // P-high phase (T-high): lung fills exponentially toward C × P-high.
+  //   V(t) = C × P-high × (1 − e^(−t/τ))
+  //   Optional spontaneous breathing overlay adds small tidal volumes.
+  //
+  // P-low (release) phase (T-low): lung empties exponentially from V_end.
+  //   V(t) = V_end × e^(−t/τ)
+  //   Release is intentionally brief to maintain recruited volume.
+
+  static BreathSample _aprvSimulate(VentParams p, double time) {
+    final cycle = p.tHigh + p.tLow;
+    final t = time % cycle;
+    final cL = p.compliance / 1000.0;
+    final tau = p.tau;
+
+    if (t < p.tHigh) {
+      // ── P-high phase ────────────────────────────────────────────────
+      final dp = p.pHigh; // driving pressure above atmospheric
+      final volL = cL * dp * (1.0 - math.exp(-t / tau));
+      final flowLs = (dp - volL / cL) / p.resistance;
+
+      // Spontaneous breathing overlay during P-high.
+      double spontVol = 0;
+      double spontFlow = 0;
+      if (p.spontaneousRR > 0) {
+        final spontCycle = 60.0 / p.spontaneousRR;
+        final tSpont = t % spontCycle;
+        final spontTi = spontCycle / 3.0; // 1:2 ratio for spontaneous
+        if (tSpont < spontTi) {
+          // Small spontaneous tidal breath (~3 cmH₂O effort).
+          const spontEffort = 3.0;
+          spontVol = cL * spontEffort * (1.0 - math.exp(-tSpont / tau));
+          spontFlow = (spontEffort - spontVol / cL) / p.resistance;
+        } else {
+          final spontExp = tSpont - spontTi;
+          final spontVEnd = cL * 3.0 * (1.0 - math.exp(-spontTi / tau));
+          spontVol = spontVEnd * math.exp(-spontExp / tau);
+          spontFlow = -spontVEnd / tau * math.exp(-spontExp / tau);
+        }
+      }
+
+      final totalVol = volL + spontVol;
+      final totalFlow = flowLs + spontFlow;
+
+      return BreathSample(
+        pressure: p.pHigh,
+        flow: totalFlow * 60.0,
+        volume: totalVol * 1000.0,
+        phase: BreathPhase.inspiration,
+      );
+    } else {
+      // ── P-low (release) phase ───────────────────────────────────────
+      final tRel = t - p.tHigh;
+      // Volume at end of P-high phase.
+      final vEndL = cL * p.pHigh * (1.0 - math.exp(-p.tHigh / tau));
+      // Target volume at P-low equilibrium.
+      final vTargetL = cL * p.pLow;
+      // Exponential decay from vEnd toward vTarget.
+      final volL = vTargetL + (vEndL - vTargetL) * math.exp(-tRel / tau);
+      final flowLs = -(vEndL - vTargetL) / tau * math.exp(-tRel / tau);
+
+      final pressure = p.pLow + (volL - vTargetL) / cL;
+
+      return BreathSample(
+        pressure: pressure.clamp(p.pLow, p.pHigh),
+        flow: flowLs * 60.0,
+        volume: volL * 1000.0,
+        phase: BreathPhase.expiration,
+      );
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Expiration — passive RC decay (all modes except APRV)
+  // ═══════════════════════════════════════════════════════════════════════
 
   static BreathSample _expiration(VentParams p, double tExp, double vEndL) {
     final cL = p.compliance / 1000.0;

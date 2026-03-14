@@ -27,12 +27,12 @@ final cycleMetricsProvider = AutoDisposeProvider<CycleMetrics>.internal(
 
 typedef CycleMetricsRef = AutoDisposeProviderRef<CycleMetrics>;
 String _$simulationNotifierHash() =>
-    r'45a811b2ad4e29da9fbd3f8204e4e02bef5af675';
+    r'2f76c6a974b41d762cbd7833fb6e58c28b5e38ee';
 
 /// See also [SimulationNotifier].
 @ProviderFor(SimulationNotifier)
 final simulationNotifierProvider =
-    AutoDisposeNotifierProvider<SimulationNotifier, SimulationState>.internal(
+    NotifierProvider<SimulationNotifier, SimulationState>.internal(
   SimulationNotifier.new,
   name: r'simulationNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -42,6 +42,6 @@ final simulationNotifierProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$SimulationNotifier = AutoDisposeNotifier<SimulationState>;
+typedef _$SimulationNotifier = Notifier<SimulationState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

@@ -16,7 +16,7 @@ part 'ventilator_params_provider.g.dart';
 // simulation engine, ABG analyzer) react automatically via Riverpod.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class VentParamsNotifier extends _$VentParamsNotifier {
   @override
   VentParams build() => ClinicalPresets.presets[ClinicalPresetType.normal]!;
@@ -48,11 +48,33 @@ class VentParamsNotifier extends _$VentParamsNotifier {
 
   void updateResistance(double r) => state = state.copyWith(resistance: r);
 
+  // ── APRV-specific ─────────────────────────────────────────────────
+
+  void updatePHigh(double v) => state = state.copyWith(pHigh: v);
+
+  void updatePLow(double v) => state = state.copyWith(pLow: v);
+
+  void updateTHigh(double v) => state = state.copyWith(tHigh: v);
+
+  void updateTLow(double v) => state = state.copyWith(tLow: v);
+
+  void updateSpontaneousRR(int v) => state = state.copyWith(spontaneousRR: v);
+
   // ── Presets ──────────────────────────────────────────────────────────
 
-  /// Replace all parameters with a clinical preset.
+  /// Apply a clinical preset. Loads all mechanical and ventilator
+  /// parameters from the preset, but preserves the current ventilation
+  /// mode if the user has manually changed it (unless the preset
+  /// explicitly requires a specific mode, like APRV).
   void applyPreset(ClinicalPresetType preset) {
-    state = ClinicalPresets.presets[preset]!;
+    final presetParams = ClinicalPresets.presets[preset]!;
+    // APRV preset must force APRV mode; otherwise preserve current mode.
+    final preserveMode = presetParams.mode != VentMode.aprv;
+    if (preserveMode) {
+      state = presetParams.copyWith(mode: state.mode);
+    } else {
+      state = presetParams;
+    }
   }
 }
 
@@ -63,7 +85,7 @@ class VentParamsNotifier extends _$VentParamsNotifier {
 // loading a preset.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ActivePreset extends _$ActivePreset {
   @override
   ClinicalPresetType? build() => ClinicalPresetType.normal;

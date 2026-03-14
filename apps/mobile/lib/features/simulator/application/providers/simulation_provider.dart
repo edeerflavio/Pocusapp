@@ -27,7 +27,7 @@ part 'simulation_provider.g.dart';
 // 60 fps scrolling and interaction on mobile devices.
 // ---------------------------------------------------------------------------
 
-@riverpod
+@Riverpod(keepAlive: true)
 class SimulationNotifier extends _$SimulationNotifier {
   // ── Circular buffers (typed arrays for cache-friendly performance) ────
 
@@ -57,7 +57,7 @@ class SimulationNotifier extends _$SimulationNotifier {
     final params = ref.read(ventParamsNotifierProvider);
     _cycleTracker = CycleTracker(peep: params.peep, rr: params.rr);
 
-    return SimulationState.initial();
+    return SimulationState.initial(peep: params.peep);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -169,7 +169,7 @@ class SimulationNotifier extends _$SimulationNotifier {
     _cycleTracker.reset(params.peep, params.rr);
     PathophysiologyRegistry.resetAll();
     ref.read(bloodGasLabNotifierProvider.notifier).reset();
-    state = SimulationState.initial();
+    state = SimulationState.initial(peep: params.peep);
   }
 }
 

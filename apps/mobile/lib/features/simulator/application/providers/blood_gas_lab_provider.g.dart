@@ -45,12 +45,12 @@ final weaningAssessmentProvider =
 
 typedef WeaningAssessmentRef = AutoDisposeProviderRef<WeaningAssessment>;
 String _$bloodGasLabNotifierHash() =>
-    r'ca002ea4e1a0c12d5609f9784f81c21718524b6a';
+    r'b7db86fc9dde995c3d666bb74074fc507161fde1';
 
 /// See also [BloodGasLabNotifier].
 @ProviderFor(BloodGasLabNotifier)
 final bloodGasLabNotifierProvider =
-    AutoDisposeNotifierProvider<BloodGasLabNotifier, BloodGasLabState>.internal(
+    NotifierProvider<BloodGasLabNotifier, BloodGasLabState>.internal(
   BloodGasLabNotifier.new,
   name: r'bloodGasLabNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -60,6 +60,6 @@ final bloodGasLabNotifierProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$BloodGasLabNotifier = AutoDisposeNotifier<BloodGasLabState>;
+typedef _$BloodGasLabNotifier = Notifier<BloodGasLabState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

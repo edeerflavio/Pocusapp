@@ -45,10 +45,10 @@ class WaveformPainter extends CustomPainter {
   // ── Layout constants ───────────────────────────────────────────────────
 
   static const _pad = EdgeInsets.fromLTRB(3, 4, 3, 8);
-  static const _bgColor = Color(0xF9060A10);
-  static const _gridColor = Color(0x0A00FF88);
-  static const _vGridColor = Color(0x0900FF88);
-  static const _zeroLineColor = Color(0x1200FF88);
+  static const _bgColor = Color(0xF9121820);
+  static const _gridColor = Color(0x0AFFFFFF);
+  static const _vGridColor = Color(0x09FFFFFF);
+  static const _zeroLineColor = Color(0x12FFFFFF);
   static const _cursorLineColor = Color(0x0DFFFFFF);
   static const _labelColor = Color(0x2EFFFFFF);
 
@@ -188,7 +188,7 @@ class WaveformPainter extends CustomPainter {
         text: text,
         style: const TextStyle(
           color: _labelColor,
-          fontSize: 8,
+          fontSize: 12,
           fontFamily: 'monospace',
         ),
       ),

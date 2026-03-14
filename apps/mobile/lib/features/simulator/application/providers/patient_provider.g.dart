@@ -70,12 +70,12 @@ final idealVt8Provider = AutoDisposeProvider<int>.internal(
 );
 
 typedef IdealVt8Ref = AutoDisposeProviderRef<int>;
-String _$patientNotifierHash() => r'dd8df41e1c2f000c40e15b2384116e2c3857efe3';
+String _$patientNotifierHash() => r'0f87013275ba4e52e5369cba6bc69171babaa538';
 
 /// See also [PatientNotifier].
 @ProviderFor(PatientNotifier)
 final patientNotifierProvider =
-    AutoDisposeNotifierProvider<PatientNotifier, PatientData>.internal(
+    NotifierProvider<PatientNotifier, PatientData>.internal(
   PatientNotifier.new,
   name: r'patientNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -85,6 +85,6 @@ final patientNotifierProvider =
   allTransitiveDependencies: null,
 );
 
-typedef _$PatientNotifier = AutoDisposeNotifier<PatientData>;
+typedef _$PatientNotifier = Notifier<PatientData>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
